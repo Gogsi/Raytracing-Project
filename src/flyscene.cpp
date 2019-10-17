@@ -11,7 +11,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/dodgeColorTest.obj");
+                                    "resources/models/cube.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -163,6 +163,40 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
                                    Eigen::Vector3f &dest) {
   // just some fake random color per pixel until you implement your ray tracing
   // remember to return your RGB values as floats in the range [0, 1]!!!
-  return Eigen::Vector3f(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX,
-                         rand() / (float)RAND_MAX);
+	int a = intersectPlane(origin, dest);
+	std::cout << a << std::endl;
+
+	return Eigen::Vector3f(0, 1.0, 0);
+}
+
+int Flyscene::intersectPlane(Eigen::Vector3f& origin,
+	Eigen::Vector3f& dest) {
+
+
+	int max = mesh.getNumberOfFaces();
+
+	float curSmallest = INFINITY;
+	int smallest_face = -1;
+	// for all faces....
+	for (size_t i = 0; i < max; i++)
+	{
+		Tucano::Face curFace = mesh.getFace(i);
+		Eigen::Vector3f normalizeNormal = curFace.normal.normalized();
+
+		Eigen::Vector3f curVertex = mesh.getVertex(curFace.vertex_ids.at(0)).head<3>().normalized();
+
+		auto D = normalizeNormal.dot(curVertex);
+		float denom = dest.normalized().dot(normalizeNormal);
+
+		if (denom > 0) {
+			float t = (D - origin.dot(normalizeNormal)) / (denom);
+			
+			if (t < curSmallest && t > 0) {
+				curSmallest = t;
+				smallest_face = i;
+			}
+		}
+	}
+
+	return smallest_face;
 }

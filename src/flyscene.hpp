@@ -69,6 +69,8 @@ public:
    */
   Eigen::Vector3f traceRay(Eigen::Vector3f &origin, Eigen::Vector3f &dest);
 
+  int intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dest);
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
