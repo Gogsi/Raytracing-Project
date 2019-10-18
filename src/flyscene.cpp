@@ -162,8 +162,11 @@ void Flyscene::raytraceScene(int width, int height) {
 Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
                                    Eigen::Vector3f &dest) {
 	Eigen::Vector3f newOrigin = origin;
-	Eigen::Vector3f newDest = -dest.normalized(); // Why???
-	HitInfo result = intersectTriangle(newOrigin, newDest);
+
+	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
+	Eigen::Vector3f newDir = dest - origin; 
+
+	HitInfo result = intersectTriangle(newOrigin, newDir);
 
 	if (result.t != INFINITY) {
 		Tucano::Face face = mesh.getFace(result.faceId);
@@ -175,7 +178,7 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 }
 
 HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
-	Eigen::Vector3f& dest) {
+	Eigen::Vector3f& dir) {
 
 	int max = mesh.getNumberOfFaces();
 
@@ -191,12 +194,12 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 		Eigen::Vector3f normalizeNormal = curFace.normal.normalized();
 
 		auto D = normalizeNormal.dot(v0); // any point on the plane can be used to calculate D
-		float denom = normalizeNormal.dot(dest);
+		float denom = normalizeNormal.dot(dir);
 
 		if (denom != 0.0) {
 			float t = (D - origin.dot(normalizeNormal)) / denom;
 
-			Eigen::Vector3f hit = origin + t * dest;
+			Eigen::Vector3f hit = origin + t * dir;
 
 			if (t >= 0) {
 				if (t < smallestT) {
@@ -207,11 +210,11 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 		}
 	}
 
-	return HitInfo{ smallestT, smallestFace, origin, dest };
+	return HitInfo{ smallestT, smallestFace, origin, dir };
 }
 
 HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
-	Eigen::Vector3f& dest) {
+	Eigen::Vector3f& dir) {
 
 	int max = mesh.getNumberOfFaces();
 
@@ -223,19 +226,20 @@ HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
 	{
 		Tucano::Face curFace = mesh.getFace(i);
 
-		Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids.at(0))).head<3>();
-		Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids.at(1))).head<3>();
-		Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids.at(2))).head<3>();
+		Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[0])).head<3>();
+		Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[1])).head<3>();
+		Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[2])).head<3>();
 
 		Eigen::Vector3f normalizeNormal = curFace.normal.normalized();
 
 		float D = normalizeNormal.dot(v0);
-		float denom = normalizeNormal.dot(dest);
+
+		float denom = normalizeNormal.dot(dir);
 
 		if (denom != 0.0) {
 			float t = (D - origin.dot(normalizeNormal)) / denom;
 
-			Eigen::Vector3f hit = origin + t * dest;
+			Eigen::Vector3f hit = origin + t * dir;
 
 			if (t >= 0 && isInTriangle(hit, v0, v1, v2)) {
 				if (t < smallestT) {
@@ -246,7 +250,7 @@ HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
 		}
 	}
 
-	return HitInfo { smallestT, smallestFace, origin, dest };
+	return HitInfo { smallestT, smallestFace, origin, dir };
 }
 
 bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2)
