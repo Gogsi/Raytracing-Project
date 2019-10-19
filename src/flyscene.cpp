@@ -158,11 +158,113 @@ void Flyscene::raytraceScene(int width, int height) {
   std::cout << "ray tracing done! " << std::endl;
 }
 
+class Box {
+public:
+	Eigen::Vector3f tmax, tmin;
 
-Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
-                                   Eigen::Vector3f &dest) {
-  // just some fake random color per pixel until you implement your ray tracing
-  // remember to return your RGB values as floats in the range [0, 1]!!!
-  return Eigen::Vector3f(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX,
-                         rand() / (float)RAND_MAX);
+	Box(Tucano::Mesh mesh) {
+
+		float tx_max = std::numeric_limits<float>::min();
+		float ty_max = std::numeric_limits<float>::min();
+		float tz_max = std::numeric_limits<float>::min();
+		float tx_min = std::numeric_limits<float>::max();
+		float ty_min = std::numeric_limits<float>::max();
+		float tz_min = std::numeric_limits<float>::max();
+
+		for (int i = 0; i < mesh.getNumberOfVertices(); i++) {
+			Eigen::Vector4f v = mesh.getVertex(i);
+
+			float x = v.x();
+			float y = v.y();
+			float z = v.z();
+
+			if (x > tx_max) {
+				tx_max = x;
+			}
+			if (x < tx_min) {
+				tx_min = x;
+			}
+			if (y > ty_max) {
+				ty_max = y;
+			}
+			if (y < ty_min) {
+				ty_min = y;
+			}
+			if (z > tz_max) {
+				tz_max = z;
+			}
+			if (z < tz_min) {
+				tz_min = z;
+			}
+		};
+
+
+
+		tmax = Eigen::Vector3f(tx_max, ty_max, tz_max);
+		tmin = Eigen::Vector3f(tx_min, ty_min, tz_min);
+
+		std::cout << tmax << std::endl;
+		std::cout << tmin << std::endl;
+
+	};
+};
+
+
+
+bool intersectionBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
+
+	Eigen::Vector3f d = dest - origin;
+
+
+
+	float tx_min = (box.tmin.x() - origin.x()) / d.x();
+	float tx_max = (box.tmax.x() - origin.x()) / d.x();
+	float ty_min = (box.tmin.y() - origin.y()) / d.y();
+	float ty_max = (box.tmax.y() - origin.y()) / d.y();
+	float tz_min = (box.tmin.z() - origin.z()) / d.z();
+	float tz_max = (box.tmax.z() - origin.z()) / d.z();
+
+	float tx_in = std::min(tx_min, tx_max);
+	float tx_out = std::max(tx_min, tx_max);
+	float ty_in = std::min(ty_min, ty_max);
+	float ty_out = std::max(ty_min, ty_max);
+	float tz_in = std::min(tz_min, tz_max);
+	float tz_out = std::max(tz_min, tz_max);
+
+	float t_in = std::max(tx_in, ty_in);
+	float t_win = std::max(t_in, tz_in);
+
+	float t_out = std::min(tx_out, tx_out);
+	float t_wout = std::min(t_out, tz_out);
+
+
+	if (t_win > t_wout || t_wout < 0) {
+		std::cout << "good luck" << std::endl;
+
+		return false;
+
+
+	}
+
+	std::cout << t_win << std::endl;
+	std::cout << t_wout << std::endl;
+
+	return true;
+};
+
+Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f& origin,
+	Eigen::Vector3f& dest) {
+	Box box = Box(mesh);
+
+	if (intersectionBox(box, origin, dest)) {
+		return Eigen::Vector3f(1.0, 0.0, 0.0);
+	}
+	else {
+		return Eigen::Vector3f(0.0, 1.0, 0.0);
+	}
+
+	// just some fake random color per pixel until you implement your ray tracing
+	// remember to return your RGB values as floats in the range [0, 1]!!!
+	return Eigen::Vector3f(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX,
+		rand() / (float)RAND_MAX);
 }
