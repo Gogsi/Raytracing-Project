@@ -11,7 +11,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/dodgeColorTest.obj");
+                                    "resources/models/cube.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -213,16 +213,70 @@ public:
 
 bool intersectionBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 
-	Eigen::Vector3f d = dest - origin;
+	Eigen::Vector3f dir = dest - origin;
+	Eigen::Vector3f invDir = Eigen::Vector3f(1/dir.x(), 1/dir.y(), 1/dir.z());
+
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+
+	if (invDir.x() >= 0) {
+		tmin = (box.tmin.x() - origin.x()) * invDir.x();
+		tmax = (box.tmax.x() - origin.x()) * invDir.x();
+	}
+	else {
+		tmin = (box.tmax.x() - origin.x()) * invDir.x();
+		tmax = (box.tmin.x() - origin.x()) * invDir.x();
+	}
+
+	if (invDir.y() >= 0) {
+		tymin = (box.tmin.y() - origin.y()) * invDir.y();
+		tymax = (box.tmax.y() - origin.y()) * invDir.y();
+	}
+	else {
+		tymin = (box.tmax.y() - origin.x()) * invDir.x();
+		tymax = (box.tmin.y() - origin.x()) * invDir.x();
+	}
+	if ((tmin > tymax) || (tymin > tmax)) {
+		return false;
+	}
+	if (tymin > tmin) {
+		tmin = tymin;
+	}
+	if (tymax < tmax) {
+		tmax = tymax;
+	}
+
+	if (invDir.z() >= 0) {
+		tzmin = (box.tmin.z() - origin.z()) * invDir.z();
+		tzmax = (box.tmax.z() - origin.z()) * invDir.z();
+	}
+	else {
+		tzmin = (box.tmax.z() - origin.z()) * invDir.z();
+		tzmax = (box.tmin.z() - origin.z()) * invDir.z();
+	}
+
+	if ((tmin > tzmax) || (tzmin > tmax)) {
+		return false;
+	}
+	if (tzmin > tmin) {
+		tmin = tzmin;
+	}
+	if (tzmax < tmax) {
+		tmax = tzmax;
+	}
+
+	return true;
 
 
 
-	float tx_min = (box.tmin.x() - origin.x()) / d.x();
-	float tx_max = (box.tmax.x() - origin.x()) / d.x();
-	float ty_min = (box.tmin.y() - origin.y()) / d.y();
-	float ty_max = (box.tmax.y() - origin.y()) / d.y();
-	float tz_min = (box.tmin.z() - origin.z()) / d.z();
-	float tz_max = (box.tmax.z() - origin.z()) / d.z();
+
+
+	/*
+	float tx_min = (box.tmin.x() - origin.x()) / dir.x();
+	float tx_max = (box.tmax.x() - origin.x()) / dir.x();
+	float ty_min = (box.tmin.y() - origin.y()) / dir.y();
+	float ty_max = (box.tmax.y() - origin.y()) / dir.y();
+	float tz_min = (box.tmin.z() - origin.z()) / dir.z();
+	float tz_max = (box.tmax.z() - origin.z()) / dir.z();
 
 	float tx_in = std::min(tx_min, tx_max);
 	float tx_out = std::max(tx_min, tx_max);
@@ -239,29 +293,30 @@ bool intersectionBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 
 
 	if (t_win > t_wout || t_wout < 0) {
-		std::cout << "good luck" << std::endl;
-
+	
 		return false;
-
 
 	}
 
 	std::cout << t_win << std::endl;
-	std::cout << t_wout << std::endl;
+	// std::cout << t_wout << std::endl;
 
 	return true;
+	*/
 };
 
 Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f& origin,
 	Eigen::Vector3f& dest) {
 	Box box = Box(mesh);
 
-	if (intersectionBox(box, origin, dest)) {
+	bool ray_box = intersectionBox(box, origin, dest);
+
+	if (ray_box) {
+		std::cout << "hit" << std::endl;
 		return Eigen::Vector3f(1.0, 0.0, 0.0);
 	}
-	else {
-		return Eigen::Vector3f(0.0, 1.0, 0.0);
-	}
+
+	return Eigen::Vector3f(0.0, 1.0, 0.0);
 
 	// just some fake random color per pixel until you implement your ray tracing
 	// remember to return your RGB values as floats in the range [0, 1]!!!
