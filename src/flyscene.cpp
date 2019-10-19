@@ -142,7 +142,7 @@ void Flyscene::raytraceScene(int width, int height) {
   // origin of the ray is always the camera center
   Eigen::Vector3f origin = flycamera.getCenter();
   Eigen::Vector3f screen_coords;
-
+  float size = image_size[1];
   // for every pixel shoot a ray from the origin through the pixel coords
   for (int j = 0; j < image_size[1]; ++j) {
     for (int i = 0; i < image_size[0]; ++i) {
@@ -151,6 +151,7 @@ void Flyscene::raytraceScene(int width, int height) {
       // launch raytracing for the given ray and write result to pixel data
       pixel_data[i][j] = traceRay(origin, screen_coords);
     }
+	std::cout << j*100/size << std::endl;
   }
 
   // write the ray tracing result to a PPM image
@@ -203,8 +204,8 @@ public:
 		tmax = Eigen::Vector3f(tx_max, ty_max, tz_max);
 		tmin = Eigen::Vector3f(tx_min, ty_min, tz_min);
 
-		std::cout << tmax << std::endl;
-		std::cout << tmin << std::endl;
+		/*std::cout << tmax << std::endl;
+		std::cout << tmin << std::endl;*/
 
 	};
 };
@@ -232,8 +233,8 @@ bool intersectionBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 		tymax = (box.tmax.y() - origin.y()) * invDir.y();
 	}
 	else {
-		tymin = (box.tmax.y() - origin.x()) * invDir.x();
-		tymax = (box.tmin.y() - origin.x()) * invDir.x();
+		tymin = (box.tmax.y() - origin.y()) * invDir.y();
+		tymax = (box.tmin.y() - origin.y()) * invDir.y();
 	}
 	if ((tmin > tymax) || (tymin > tmax)) {
 		return false;
@@ -312,14 +313,14 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f& origin,
 	bool ray_box = intersectionBox(box, origin, dest);
 
 	if (ray_box) {
-		std::cout << "hit" << std::endl;
+		//std::cout << "hit" << std::endl;
 		return Eigen::Vector3f(1.0, 0.0, 0.0);
 	}
 
 	return Eigen::Vector3f(0.0, 1.0, 0.0);
 
-	// just some fake random color per pixel until you implement your ray tracing
-	// remember to return your RGB values as floats in the range [0, 1]!!!
-	return Eigen::Vector3f(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX,
-		rand() / (float)RAND_MAX);
+	//// just some fake random color per pixel until you implement your ray tracing
+	//// remember to return your RGB values as floats in the range [0, 1]!!!
+	//return Eigen::Vector3f(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX,
+	//	rand() / (float)RAND_MAX);
 }
