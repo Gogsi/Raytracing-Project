@@ -11,7 +11,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/dodgeColorTest.obj");
+                                    "resources/models/cube.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -93,18 +93,18 @@ void Flyscene::simulate(GLFWwindow *window) {
   // Update the camera.
   // NOTE(mickvangelderen): GLFW 3.2 has a problem on ubuntu where some key
   // events are repeated: https://github.com/glfw/glfw/issues/747. Sucks.
-  float dx = (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ? 1.0 : 0.0) -
-             (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ? 1.0 : 0.0);
+  float dx = (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS ? 0.1 : 0.0) -
+             (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS ? 0.1 : 0.0);
   float dy = (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS ||
                       glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS
-                  ? 1.0
+                  ? 0.1
                   : 0.0) -
              (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS ||
                       glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS
-                  ? 1.0
+                  ? 0.1
                   : 0.0);
-  float dz = (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ? 1.0 : 0.0) -
-             (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ? 1.0 : 0.0);
+  float dz = (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ? 0.1 : 0.0) -
+             (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ? 0.1 : 0.0);
   flycamera.translate(dx, dy, dz);
 }
 
@@ -161,8 +161,118 @@ void Flyscene::raytraceScene(int width, int height) {
 
 Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
                                    Eigen::Vector3f &dest) {
-  // just some fake random color per pixel until you implement your ray tracing
-  // remember to return your RGB values as floats in the range [0, 1]!!!
-  return Eigen::Vector3f(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX,
-                         rand() / (float)RAND_MAX);
+	Eigen::Vector3f newOrigin = origin;
+
+	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
+	Eigen::Vector3f newDir = dest - origin; 
+
+	HitInfo result = intersectTriangle(newOrigin, newDir);
+
+	if (result.t != INFINITY) {
+		Tucano::Face face = mesh.getFace(result.faceId);
+		auto mat = phong.getMaterial(face.material_id);
+		return mat.getDiffuse();
+	}
+
+	return Eigen::Vector3f(0, 1.0, 0);
+}
+
+HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
+	Eigen::Vector3f& dir) {
+
+	int max = mesh.getNumberOfFaces();
+
+	float smallestT = INFINITY;
+	int smallestFace = -1;
+	// for all faces....
+	for (size_t i = 0; i < max; i++)
+	{
+		Tucano::Face curFace = mesh.getFace(i);
+
+		Eigen::Vector3f v0 = (mesh.getModelMatrix() * mesh.getVertex(curFace.vertex_ids.at(0))).head<3>(); // You can pick any vertex
+
+		Eigen::Vector3f normalizeNormal = curFace.normal.normalized();
+
+		auto D = normalizeNormal.dot(v0); // any point on the plane can be used to calculate D
+		float denom = normalizeNormal.dot(dir);
+
+		if (denom != 0.0) {
+			float t = (D - origin.dot(normalizeNormal)) / denom;
+
+			Eigen::Vector3f hit = origin + t * dir;
+
+			if (t >= 0) {
+				if (t < smallestT) {
+					smallestT = t;
+					smallestFace = i;
+				}
+			}
+		}
+	}
+
+	return HitInfo{ smallestT, smallestFace, origin, dir };
+}
+
+HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
+	Eigen::Vector3f& dir) {
+
+	int max = mesh.getNumberOfFaces();
+
+	float smallestT = INFINITY;
+	int smallestFace = -1;
+
+	// for all faces....
+	for (size_t i = 0; i < max; i++)
+	{
+		Tucano::Face curFace = mesh.getFace(i);
+
+		Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[0])).head<3>();
+		Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[1])).head<3>();
+		Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[2])).head<3>();
+
+		Eigen::Vector3f normalizeNormal = curFace.normal.normalized();
+
+		float D = normalizeNormal.dot(v0);
+
+		float denom = normalizeNormal.dot(dir);
+
+		if (denom != 0.0) {
+			float t = (D - origin.dot(normalizeNormal)) / denom;
+
+			Eigen::Vector3f hit = origin + t * dir;
+
+			if (t >= 0 && isInTriangle(hit, v0, v1, v2)) {
+				if (t < smallestT) {
+					smallestT = t;
+					smallestFace = i;
+				}
+			}
+		}
+	}
+
+	return HitInfo { smallestT, smallestFace, origin, dir };
+}
+
+bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2)
+{
+	Eigen::Vector3f u = v1 - v0;
+	Eigen::Vector3f v = v2 - v0;
+	Eigen::Vector3f w = hit - v0;
+
+	float uDotU = u.dot(u);
+	float uDotV = u.dot(v);
+	float vDotV = v.dot(v);
+
+	float wDotU = w.dot(u);
+	float wDotV = w.dot(v);
+
+	float denom = uDotU * vDotV - uDotV * uDotV;
+	float s1 = vDotV * wDotU - uDotV * wDotV;
+	float t1 = uDotU * wDotV - uDotV * wDotU;
+
+	float s = s1 / denom;
+	float t = t1 / denom;
+
+	if (s < 0 || t < 0 || s + t > 1) return false;
+	return true;
 }

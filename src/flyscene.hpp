@@ -16,6 +16,8 @@
 #include <tucano/utils/mtlIO.hpp>
 #include <tucano/utils/objimporter.hpp>
 
+#include "hitInfo.h"
+
 class Flyscene {
 
 public:
@@ -68,6 +70,12 @@ public:
    * @return a RGB color
    */
   Eigen::Vector3f traceRay(Eigen::Vector3f &origin, Eigen::Vector3f &dest);
+
+  HitInfo intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
+
+  HitInfo intersectTriangle(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
+
+  bool isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2);
 
 private:
   // A simple phong shader for rendering meshes
