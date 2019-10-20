@@ -210,7 +210,7 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 		}
 	}
 
-	return HitInfo{ smallestT, smallestFace, origin, dir };
+	return HitInfo{ smallestT, smallestFace};
 }
 
 HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
@@ -250,7 +250,63 @@ HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
 		}
 	}
 
-	return HitInfo { smallestT, smallestFace, origin, dir };
+	return HitInfo { smallestT, smallestFace };
+}
+
+HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
+
+	Eigen::Vector3f dir = dest - origin;
+	Eigen::Vector3f invDir = Eigen::Vector3f(1 / dir.x(), 1 / dir.y(), 1 / dir.z());
+
+	float tmin, tmax, tymin, tymax, tzmin, tzmax;
+
+	if (invDir.x() >= 0) {
+		tmin = (box.tmin.x() - origin.x()) * invDir.x();
+		tmax = (box.tmax.x() - origin.x()) * invDir.x();
+	}
+	else {
+		tmin = (box.tmax.x() - origin.x()) * invDir.x();
+		tmax = (box.tmin.x() - origin.x()) * invDir.x();
+	}
+
+	if (invDir.y() >= 0) {
+		tymin = (box.tmin.y() - origin.y()) * invDir.y();
+		tymax = (box.tmax.y() - origin.y()) * invDir.y();
+	}
+	else {
+		tymin = (box.tmax.y() - origin.y()) * invDir.y();
+		tymax = (box.tmin.y() - origin.y()) * invDir.y();
+	}
+	if ((tmin > tymax) || (tymin > tmax)) {
+		return HitInfo{ INFINITY, -1};
+	}
+	if (tymin > tmin) {
+		tmin = tymin;
+	}
+	if (tymax < tmax) {
+		tmax = tymax;
+	}
+
+	if (invDir.z() >= 0) {
+		tzmin = (box.tmin.z() - origin.z()) * invDir.z();
+		tzmax = (box.tmax.z() - origin.z()) * invDir.z();
+	}
+	else {
+		tzmin = (box.tmax.z() - origin.z()) * invDir.z();
+		tzmax = (box.tmin.z() - origin.z()) * invDir.z();
+	}
+
+	if ((tmin > tzmax) || (tzmin > tmax)) {
+		return HitInfo{ INFINITY, -1};
+	}
+	if (tzmin > tmin) {
+		tmin = tzmin;
+	}
+	if (tzmax < tmax) {
+		tmax = tzmax;
+	}
+
+	return HitInfo{ tmin, -1};
 }
 
 bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2)
