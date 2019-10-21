@@ -162,8 +162,11 @@ void Flyscene::raytraceScene(int width, int height) {
 class Box {
 public:
 	Eigen::Vector3f tmax, tmin;
-
-	Box(Tucano::Mesh mesh) {
+	Box(Eigen::Vector3f tmin, Eigen::Vector3f tmax) {
+		this->tmax = tmax;
+		this->tmin = tmin;
+	}
+	Box(Tucano::Mesh mesh, int start, int end) {
 
 		float tx_max = std::numeric_limits<float>::min();
 		float ty_max = std::numeric_limits<float>::min();
@@ -172,7 +175,7 @@ public:
 		float ty_min = std::numeric_limits<float>::max();
 		float tz_min = std::numeric_limits<float>::max();
 
-		for (int i = 0; i < mesh.getNumberOfVertices(); i++) {
+		for (int i = start; i < end; i++) {
 			Eigen::Vector4f v = mesh.getVertex(i);
 
 			float x = v.x();
@@ -308,7 +311,7 @@ bool intersectionBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 
 Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f& origin,
 	Eigen::Vector3f& dest) {
-	Box box = Box(mesh);
+	Box box = Box(mesh, 0, mesh.getNumberOfVertices() / 2);
 
 	bool ray_box = intersectionBox(box, origin, dest);
 
