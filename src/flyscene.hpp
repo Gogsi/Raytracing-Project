@@ -80,6 +80,8 @@ public:
 
   bool isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2);
 
+  vector<Box> divideBox(Box box, int max_numberFaces, vector<Box> boxes);
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
@@ -111,6 +113,9 @@ private:
 
   /// MTL materials
   vector<Tucano::Material::Mtl> materials;
+
+  // list of bounding boxes
+  vector<Box> boxes;
 };
 
 #endif // FLYSCENE

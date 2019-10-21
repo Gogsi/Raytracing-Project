@@ -1,5 +1,8 @@
 #include "flyscene.hpp"
 #include <GLFW/glfw3.h>
+#include <queue>
+
+using namespace std;
 
 void Flyscene::initialize(int width, int height) {
   // initiliaze the Phong Shading effect for the Opengl Previewer
@@ -331,4 +334,32 @@ bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Ve
 
 	if (s < 0 || t < 0 || s + t > 1) return false;
 	return true;
+}
+
+vector<Box> divideBox(Box box, int max_numberFaces) {
+	if (box.triangles.size() < max_numberFaces) {
+		return;
+	}
+
+	std::queue<Box> list_box;
+	list_box.push(box);
+
+	while (list_box.size() != 0)
+	{
+		
+	}
+}
+
+int axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
+	float max = std::numeric_limits<float>::min();
+	int result = -1;
+	for (auto i = 0; i < 3; i++)
+	{
+		float diff = tmax[i] - tmin[i];
+		if (max < diff) {
+			max = diff;
+			result = i;
+		}
+	}
+	return result;
 }

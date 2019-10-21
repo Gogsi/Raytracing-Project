@@ -1,9 +1,19 @@
 #pragma once
 #include <tucano/mesh.hpp>
+#include <vector>
+using namespace std;
 
 class Box {
 public:
 	Eigen::Vector3f tmax, tmin;
+
+	vector<Tucano::Face> triangles;
+
+	Box(Eigen::Vector3f tmin, Eigen::Vector3f tmax, vector<Tucano::Face> triangles) {
+		this->tmin = tmin;
+		this->tmax = tmax;
+		this->triangles = triangles;
+	};
 
 	Box(Tucano::Mesh mesh) {
 
@@ -13,6 +23,11 @@ public:
 		float tx_min = std::numeric_limits<float>::max();
 		float ty_min = std::numeric_limits<float>::max();
 		float tz_min = std::numeric_limits<float>::max();
+
+		for (auto i = 0; i < mesh.getNumberOfFaces; i++)
+		{
+			this->triangles.push_back(mesh.getFace(i));
+		}
 
 		for (int i = 0; i < mesh.getNumberOfVertices(); i++) {
 			Eigen::Vector4f v = mesh.getVertex(i);
