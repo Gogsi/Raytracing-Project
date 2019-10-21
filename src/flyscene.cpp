@@ -171,21 +171,18 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 	
 	Box box = Box(mesh);
 
-	if (intersectBox(box, origin, newDir))
-	{
-		std::cout << "big box" << std::endl;
-		return Eigen::Vector3f(0, 0, 1.0);
-	}
 
 	vector<Box> boxes = divideBox(box);
 	//std::cout << boxes.size() << std::endl;
 
 	for (auto i = 0; i < boxes.size() ; i++)
 	{
-		if (intersectBox(boxes.at(i), origin, newDir))
+		HitInfo result = intersectBox(boxes.at(i), origin, dest);
+
+		if (result.t != INFINITY)
 		{
-			std::cout << i << std::endl;
-			return Eigen::Vector3f(0, 1.0, 0);
+			// std::cout << i << std::endl;
+			return Eigen::Vector3f(i, 1.0, 0);
 		}
 	}
 
@@ -274,7 +271,7 @@ HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
 	return HitInfo { smallestT, smallestFace };
 }
 
-bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
+HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 
 	Eigen::Vector3f dir = dest - origin;
 	Eigen::Vector3f invDir = Eigen::Vector3f(1 / dir.x(), 1 / dir.y(), 1 / dir.z());
@@ -282,24 +279,24 @@ bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& 
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 
 	if (invDir.x() >= 0) {
-		tmin = (box.tmin.x() - origin.x()) * invDir.x();
-		tmax = (box.tmax.x() - origin.x()) * invDir.x();
+		tmin = ((mesh.getShapeModelMatrix() * box.tmin).x() - origin.x()) * invDir.x();
+		tmax = ((mesh.getShapeModelMatrix() * box.tmax).x() - origin.x()) * invDir.x();
 	}
 	else {
-		tmin = (box.tmax.x() - origin.x()) * invDir.x();
-		tmax = (box.tmin.x() - origin.x()) * invDir.x();
+		tmin = ((mesh.getShapeModelMatrix() * box.tmax).x() - origin.x()) * invDir.x();
+		tmax = ((mesh.getShapeModelMatrix() * box.tmin).x() - origin.x()) * invDir.x();
 	}
 
 	if (invDir.y() >= 0) {
-		tymin = (box.tmin.y() - origin.y()) * invDir.y();
-		tymax = (box.tmax.y() - origin.y()) * invDir.y();
+		tymin = ((mesh.getShapeModelMatrix() * box.tmin).y() - origin.y()) * invDir.y();
+		tymax = ((mesh.getShapeModelMatrix() * box.tmax).y() - origin.y()) * invDir.y();
 	}
 	else {
-		tymin = (box.tmax.y() - origin.y()) * invDir.y();
-		tymax = (box.tmin.y() - origin.y()) * invDir.y();
+		tymin = ((mesh.getShapeModelMatrix() * box.tmax).y() - origin.y()) * invDir.y();
+		tymax = ((mesh.getShapeModelMatrix() * box.tmin).y() - origin.y()) * invDir.y();
 	}
 	if ((tmin > tymax) || (tymin > tmax)) {
-		return false;
+		return HitInfo{ INFINITY, -1 };
 	}
 	if (tymin > tmin) {
 		tmin = tymin;
@@ -309,16 +306,16 @@ bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& 
 	}
 
 	if (invDir.z() >= 0) {
-		tzmin = (box.tmin.z() - origin.z()) * invDir.z();
-		tzmax = (box.tmax.z() - origin.z()) * invDir.z();
+		tzmin = ((mesh.getShapeModelMatrix() * box.tmin).z() - origin.z()) * invDir.z();
+		tzmax = ((mesh.getShapeModelMatrix() * box.tmax).z() - origin.z()) * invDir.z();
 	}
 	else {
-		tzmin = (box.tmax.z() - origin.z()) * invDir.z();
-		tzmax = (box.tmin.z() - origin.z()) * invDir.z();
+		tzmin = ((mesh.getShapeModelMatrix() * box.tmax).z() - origin.z()) * invDir.z();
+		tzmax = ((mesh.getShapeModelMatrix() * box.tmin).z() - origin.z()) * invDir.z();
 	}
 
 	if ((tmin > tzmax) || (tzmin > tmax)) {
-		return false;
+		return HitInfo{ INFINITY, -1 };
 	}
 	if (tzmin > tmin) {
 		tmin = tzmin;
@@ -327,7 +324,7 @@ bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& 
 		tmax = tzmax;
 	}
 
-	return true;
+	return HitInfo{ tmin, -1 };
 }
 
 bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2)
@@ -354,7 +351,7 @@ bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Ve
 	return true;
 }
 
-vector<Box> Flyscene::divideBox(Box box/*, int max_numberFaces*/) {
+vector<Box> Flyscene::divideBox(Box& box/*, int max_numberFaces*/) {
 
 
 	vector<Box> result;
@@ -363,8 +360,6 @@ vector<Box> Flyscene::divideBox(Box box/*, int max_numberFaces*/) {
 	int n = 1;
 	while (n != 0)
 	{
-		Box box = box;
-
 		/*
 		if (box.triangles.size() < max_numberFaces) {
 			result.push_back(box);
@@ -427,15 +422,18 @@ vector<Box> Flyscene::divideBox(Box box/*, int max_numberFaces*/) {
 }
 
 int Flyscene::axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
-	float max = std::numeric_limits<float>::min();
-	int result = -1;
-	for (auto i = 0; i < 3; i++)
-	{
-		float diff = tmax[i] - tmin[i];
-		if (max < diff) {
-			max = diff;
-			result = i;
-		}
-	}
-	return result;
+	//float max = std::numeric_limits<float>::min();
+	//int result = -1;
+	//for (auto i = 0; i < 3; i++)
+	//{
+	//	float diff = tmax[i] - tmin[i];
+	//	if (max < diff) {
+	//		max = diff;
+	//		//result = i;
+	//		return 0;
+	//	}
+	//}
+	//return 0;
+
+	return 0;
 }
