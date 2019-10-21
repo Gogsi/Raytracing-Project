@@ -76,7 +76,7 @@ public:
 
   HitInfo intersectTriangle(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 
-  HitInfo intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest);
+  bool intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest);
 
   bool isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2);
 

@@ -43,8 +43,8 @@ public:
 
 
 
-		tmax = Eigen::Vector3f(tx_max, ty_max, tz_max);
-		tmin = Eigen::Vector3f(tx_min, ty_min, tz_min);
+		tmax = mesh.getShapeModelMatrix() * Eigen::Vector3f(tx_max, ty_max, tz_max);
+		tmin = mesh.getShapeModelMatrix() * Eigen::Vector3f(tx_min, ty_min, tz_min);
 
 		/*std::cout << tmax << std::endl;
 		std::cout << tmin << std::endl;*/
