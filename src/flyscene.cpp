@@ -273,27 +273,27 @@ HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
 
 HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 
-	Eigen::Vector3f dir = dest - origin;
+	Eigen::Vector3f dir = dest;
 	Eigen::Vector3f invDir = Eigen::Vector3f(1 / dir.x(), 1 / dir.y(), 1 / dir.z());
 
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 
 	if (invDir.x() >= 0) {
-		tmin = ((mesh.getShapeModelMatrix() * box.tmin).x() - origin.x()) * invDir.x();
-		tmax = ((mesh.getShapeModelMatrix() * box.tmax).x() - origin.x()) * invDir.x();
+		tmin = (box.tmin.x() - origin.x()) * invDir.x();
+		tmax = (box.tmax.x() - origin.x()) * invDir.x();
 	}
 	else {
-		tmin = ((mesh.getShapeModelMatrix() * box.tmax).x() - origin.x()) * invDir.x();
-		tmax = ((mesh.getShapeModelMatrix() * box.tmin).x() - origin.x()) * invDir.x();
+		tmin = (box.tmax.x() - origin.x()) * invDir.x();
+		tmax = (box.tmin.x() - origin.x()) * invDir.x();
 	}
 
 	if (invDir.y() >= 0) {
-		tymin = ((mesh.getShapeModelMatrix() * box.tmin).y() - origin.y()) * invDir.y();
-		tymax = ((mesh.getShapeModelMatrix() * box.tmax).y() - origin.y()) * invDir.y();
+		tymin = (box.tmin.y() - origin.y()) * invDir.y();
+		tymax = (box.tmax.y() - origin.y()) * invDir.y();
 	}
 	else {
-		tymin = ((mesh.getShapeModelMatrix() * box.tmax).y() - origin.y()) * invDir.y();
-		tymax = ((mesh.getShapeModelMatrix() * box.tmin).y() - origin.y()) * invDir.y();
+		tymin = (box.tmax.y() - origin.y()) * invDir.y();
+		tymax = (box.tmin.y() - origin.y()) * invDir.y();
 	}
 	if ((tmin > tymax) || (tymin > tmax)) {
 		return HitInfo{ INFINITY, -1 };
@@ -306,12 +306,12 @@ HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3
 	}
 
 	if (invDir.z() >= 0) {
-		tzmin = ((mesh.getShapeModelMatrix() * box.tmin).z() - origin.z()) * invDir.z();
-		tzmax = ((mesh.getShapeModelMatrix() * box.tmax).z() - origin.z()) * invDir.z();
+		tzmin = (box.tmin.z() - origin.z()) * invDir.z();
+		tzmax = (box.tmax.z() - origin.z()) * invDir.z();
 	}
 	else {
-		tzmin = ((mesh.getShapeModelMatrix() * box.tmax).z() - origin.z()) * invDir.z();
-		tzmax = ((mesh.getShapeModelMatrix() * box.tmin).z() - origin.z()) * invDir.z();
+		tzmin = (box.tmax.z() - origin.z()) * invDir.z();
+		tzmax = (box.tmin.z() - origin.z()) * invDir.z();
 	}
 
 	if ((tmin > tzmax) || (tzmin > tmax)) {
