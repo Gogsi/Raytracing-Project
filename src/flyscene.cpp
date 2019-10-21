@@ -167,9 +167,9 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
 	Eigen::Vector3f newDir = dest - origin; 
 	Box box = Box(mesh);
-	bool result = intersectBox(box, newOrigin, newDir);
+	HitInfo result = intersectBox(box, newOrigin, newDir);
 
-	if (result) {
+	if (result.t != INFINITY) {
 		/*Tucano::Face face = mesh.getFace(result.faceId);
 		auto mat = phong.getMaterial(face.material_id);
 		return mat.getDiffuse();*/
@@ -255,7 +255,7 @@ HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
 	return HitInfo { smallestT, smallestFace };
 }
 
-bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
+HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 
 	Eigen::Vector3f dir = dest;
 	Eigen::Vector3f invDir = Eigen::Vector3f(1 / dir.x(), 1 / dir.y(), 1 / dir.z());
@@ -280,7 +280,7 @@ bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& 
 		tymax = (box.tmin.y() - origin.y()) * invDir.y();
 	}
 	if ((tmin > tymax) || (tymin > tmax)) {
-		return false;
+		return HitInfo{ INFINITY, -1};
 	}
 	if (tymin > tmin) {
 		tmin = tymin;
@@ -299,7 +299,7 @@ bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& 
 	}
 
 	if ((tmin > tzmax) || (tzmin > tmax)) {
-		return false;
+		return HitInfo{ INFINITY, -1 };
 	}
 	if (tzmin > tmin) {
 		tmin = tzmin;
@@ -308,7 +308,7 @@ bool Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& 
 		tmax = tzmax;
 	}
 
-	return true;
+	return HitInfo{ tmin, -1 };
 }
 
 
