@@ -204,8 +204,8 @@ public:
 
 
 
-		tmax = Eigen::Vector3f(tx_max, ty_max, tz_max);
-		tmin = Eigen::Vector3f(tx_min, ty_min, tz_min);
+		tmax = mesh.getShapeModelMatrix() * Eigen::Vector3f(tx_max, ty_max, tz_max);
+		tmin = mesh.getShapeModelMatrix() * Eigen::Vector3f(tx_min, ty_min, tz_min);
 
 		/*std::cout << tmax << std::endl;
 		std::cout << tmin << std::endl;*/
@@ -311,7 +311,7 @@ bool intersectionBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
 
 Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f& origin,
 	Eigen::Vector3f& dest) {
-	Box box = Box(mesh, 0, mesh.getNumberOfVertices() / 2);
+	Box box = Box(mesh, 0, mesh.getNumberOfVertices());
 
 	bool ray_box = intersectionBox(box, origin, dest);
 
