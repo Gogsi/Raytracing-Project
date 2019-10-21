@@ -168,14 +168,23 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 
 	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
 	Eigen::Vector3f newDir = dest - origin; 
+	
+	Box box = Box(mesh);
+	vector<Box> boxes = divideBox(box)
 
-	HitInfo result = intersectTriangle(newOrigin, newDir);
+	for (auto i = 0; i < boxes.size() ; i++)
+	{
+		if (intersectBox(boxes.pop(), origin, newDir)
+		{
+			return Eigen::Vector3f(i, 1.0, 0);
+		}
+	}
 
-	if (result.t != INFINITY) {
+/*	if (result.t != INFINITY) {
 		Tucano::Face face = mesh.getFace(result.faceId);
 		auto mat = phong.getMaterial(face.material_id);
 		return mat.getDiffuse();
-	}
+	}*/
 
 	return Eigen::Vector3f(0, 1.0, 0);
 }
@@ -336,18 +345,76 @@ bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Ve
 	return true;
 }
 
-vector<Box> divideBox(Box box, int max_numberFaces) {
-	if (box.triangles.size() < max_numberFaces) {
-		return;
-	}
+vector<Box> divideBox(Box box/*, int max_numberFaces*/) {
 
+
+	vector<Box> result;
 	std::queue<Box> list_box;
 	list_box.push(box);
-
-	while (list_box.size() != 0)
+	int n = 2;
+	while (n != 0)
 	{
+		Box box = list_box.pop();
+
+		/*
+		if (box.triangles.size() < max_numberFaces) {
+			result.push_back(box);
+		}
+		*/
 		
+			int axis = axisToDivide(box.tmax, box.tmin);
+
+			if (axis == 0) {
+				int x = (box.tmax.x() - box.tmin.x()) / 2;
+
+				Eigen::Vector3f midMax = Eigen::Vector3f(x, box.tmax.y(), box.tmax.z());
+				Eigen::Vector3f midMin = Eigen::Vector3f(x, box.tmin.y(), box.tmin.z());
+
+
+
+
+				Box box1 = Box(Eigen::Vector3f(tmin, midMax));
+				Box box2 = Box(Eigen:::Vector3f(midMin, tmax));
+
+				list_box.push(box1);
+				list_box.push(box2);
+				result.push_back(box1);
+				result.push_back(box2);
+
+			}
+			else if (axis == 1) {
+				int y = (box.tmax.y() - box.tmin.y()) / 2;
+
+				Eigen::Vector3f midMax = Eigen::Vector3f(box.tmax.x(), y, box.tmax.z());
+				Eigen::Vector3f midMin = Eigen::Vector3f(box.tmin.x(), y, box.tmin.z());
+
+				Box box1 = Box(Eigen::Vector3f(tmin, midMax));
+				Box box2 = Box(Eigen:::Vector3f(midMin, tmax));
+
+				list_box.push(box1);
+				list_box.push(box2);
+
+				result.push_back(box1);
+				result.push_back(box2);
+			}
+			else {
+				int z = (box.tmax.z() - box.tmin.z()) / 2;
+
+				Eigen::Vector3f midMax = Eigen::Vector3f(box.tmax.x(), box.tmax.y(), z);
+				Eigen::Vector3f midMin = Eigen::Vector3f(box.tmin.x(), box.tmin.y(), z);
+
+				Box box1 = Box(Eigen::Vector3f(tmin, midMax, ));
+				Box box2 = Box(Eigen:::Vector3f(midMin, tmax, ));
+
+				list_box.push(box1);
+				list_box.push(box2);
+
+				result.push_back(box1);
+				result.push_back(box2);
+			}
+			n--;
 	}
+	return result;
 }
 
 int axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {

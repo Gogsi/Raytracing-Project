@@ -9,10 +9,10 @@ public:
 
 	vector<Tucano::Face> triangles;
 
-	Box(Eigen::Vector3f tmin, Eigen::Vector3f tmax, vector<Tucano::Face> triangles) {
+	Box(Eigen::Vector3f tmin, Eigen::Vector3f tmax /*, vector<Tucano::Face> triangles*/) {
 		this->tmin = tmin;
 		this->tmax = tmax;
-		this->triangles = triangles;
+		//this->triangles = triangles;
 	};
 
 	Box(Tucano::Mesh mesh) {
@@ -24,7 +24,7 @@ public:
 		float ty_min = std::numeric_limits<float>::max();
 		float tz_min = std::numeric_limits<float>::max();
 
-		for (auto i = 0; i < mesh.getNumberOfFaces; i++)
+		for (auto i = 0; i < mesh.getNumberOfFaces(); i++)
 		{
 			this->triangles.push_back(mesh.getFace(i));
 		}
