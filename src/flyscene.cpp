@@ -177,7 +177,7 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 
 	for (auto i = 0; i < boxes.size() ; i++)
 	{
-		HitInfo result = intersectBox(boxes.at(i), origin, dest);
+		HitInfo result = intersectBox(boxes.at(i), origin, newDir);
 
 		if (result.t != INFINITY)
 		{
