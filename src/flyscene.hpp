@@ -70,7 +70,7 @@ public:
    * @param dest Other point on the ray, usually screen coordinates
    * @return a RGB color
    */
-  Eigen::Vector3f traceRay(Eigen::Vector3f &origin, Eigen::Vector3f &dest);
+  Eigen::Vector3f traceRay(vector<Box>& boxes, Eigen::Vector3f &origin, Eigen::Vector3f &dest);
 
   HitInfo intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 

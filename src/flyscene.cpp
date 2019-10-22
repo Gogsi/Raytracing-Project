@@ -146,13 +146,16 @@ void Flyscene::raytraceScene(int width, int height) {
   Eigen::Vector3f origin = flycamera.getCenter();
   Eigen::Vector3f screen_coords;
 
+  Box box = Box(mesh);
+  vector<Box> boxes = divideBox(box);
+
   // for every pixel shoot a ray from the origin through the pixel coords
   for (int j = 0; j < image_size[1]; ++j) {
     for (int i = 0; i < image_size[0]; ++i) {
       // create a ray from the camera passing through the pixel (i,j)
       screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
       // launch raytracing for the given ray and write result to pixel data
-      pixel_data[i][j] = traceRay(origin, screen_coords);
+      pixel_data[i][j] = traceRay(boxes,origin, screen_coords);
     }
   }
 
@@ -162,17 +165,14 @@ void Flyscene::raytraceScene(int width, int height) {
 }
 
 
-Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
+Eigen::Vector3f Flyscene::traceRay(vector<Box>& boxes, Eigen::Vector3f &origin,
                                    Eigen::Vector3f &dest) {
 	Eigen::Vector3f newOrigin = origin;
 
 	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
 	Eigen::Vector3f newDir = dest - origin; 
 	
-	Box box = Box(mesh);
 
-
-	vector<Box> boxes = divideBox(box);
 	//std::cout << boxes.size() << std::endl;
 
 	for (auto i = 0; i < boxes.size() ; i++)
@@ -422,18 +422,17 @@ vector<Box> Flyscene::divideBox(Box& box/*, int max_numberFaces*/) {
 }
 
 int Flyscene::axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
-	//float max = std::numeric_limits<float>::min();
-	//int result = -1;
-	//for (auto i = 0; i < 3; i++)
-	//{
-	//	float diff = tmax[i] - tmin[i];
-	//	if (max < diff) {
-	//		max = diff;
-	//		//result = i;
-	//		return 0;
-	//	}
-	//}
-	//return 0;
+	float max = std::numeric_limits<float>::min();
+	int result = -1;
+	for (auto i = 0; i < 3; i++)
+	{
+		float diff = tmax[i] - tmin[i];
+		if (max < diff) {
+			max = diff;
+			result = i;
+			//return 0;
+		}
+	}
+	return result;
 
-	return 0;
 }
