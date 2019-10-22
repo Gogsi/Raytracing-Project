@@ -70,7 +70,7 @@ public:
    * @param dest Other point on the ray, usually screen coordinates
    * @return a RGB color
    */
-  Eigen::Vector3f traceRay(vector<Box>& boxes, Eigen::Vector3f &origin, Eigen::Vector3f &dest);
+  Eigen::Vector3f traceRay(Eigen::Vector3f &origin, Eigen::Vector3f &dest);
 
   HitInfo intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 
@@ -80,9 +80,11 @@ public:
 
   bool isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2);
 
-  vector<Box> divideBox(Box& box/*, int max_numberFaces, vector<Box> boxes*/);
+  vector<Box> divideBox(Box& box, int max_numberFaces);
 
   int axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin);
+
+  bool isInBox(Box& box, Tucano::Face& face);
 
 private:
   // A simple phong shader for rendering meshes

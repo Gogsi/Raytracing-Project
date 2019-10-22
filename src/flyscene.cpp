@@ -56,7 +56,9 @@ void Flyscene::initialize(int width, int height) {
   //   std::cout<<"face   normal "<<face.normal.transpose() << std::endl << std::endl;
   // }
 
-
+  // create the array of boxes
+  Box box = Box(mesh);
+  this->boxes = divideBox(box, 4);
 
 }
 
@@ -146,8 +148,7 @@ void Flyscene::raytraceScene(int width, int height) {
   Eigen::Vector3f origin = flycamera.getCenter();
   Eigen::Vector3f screen_coords;
 
-  Box box = Box(mesh);
-  vector<Box> boxes = divideBox(box);
+  std::cout << boxes.size() << std::endl;
 
   // for every pixel shoot a ray from the origin through the pixel coords
   for (int j = 0; j < image_size[1]; ++j) {
@@ -155,7 +156,7 @@ void Flyscene::raytraceScene(int width, int height) {
       // create a ray from the camera passing through the pixel (i,j)
       screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
       // launch raytracing for the given ray and write result to pixel data
-      pixel_data[i][j] = traceRay(boxes,origin, screen_coords);
+      pixel_data[i][j] = traceRay(origin, screen_coords);
     }
   }
 
@@ -165,7 +166,7 @@ void Flyscene::raytraceScene(int width, int height) {
 }
 
 
-Eigen::Vector3f Flyscene::traceRay(vector<Box>& boxes, Eigen::Vector3f &origin,
+Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
                                    Eigen::Vector3f &dest) {
 	Eigen::Vector3f newOrigin = origin;
 
@@ -181,8 +182,9 @@ Eigen::Vector3f Flyscene::traceRay(vector<Box>& boxes, Eigen::Vector3f &origin,
 
 		if (result.t != INFINITY)
 		{
-			// std::cout << i << std::endl;
-			return Eigen::Vector3f(i, 1.0, 0);
+			std::cout << "Box ID:" + i << std::endl;
+			std::cout << "Number of faces" + boxes.at(i).triangles.size() << std::endl;
+			//return Eigen::Vector3f(i/4, 1.0, 0);
 		}
 	}
 
@@ -351,22 +353,30 @@ bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Ve
 	return true;
 }
 
-vector<Box> Flyscene::divideBox(Box& box/*, int max_numberFaces*/) {
+vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 
 
 	vector<Box> result;
-	/*std::queue<Box> list_box;
-	list_box.push(box);*/
+	std::queue<Box> list_box;
+	list_box.push(bigBox);
 	int n = 1;
-	while (n != 0)
+	while (list_box.size() > 0 )
 	{
-		/*
-		if (box.triangles.size() < max_numberFaces) {
+		/*std::cout << "size of the queue before taking the first element" << std::endl;
+		std::cout << list_box.size() << std::endl;*/
+		Box box = list_box.front();
+		std::cout << "number of triangles" << std::endl;
+		std::cout << box.triangles.size() << std::endl;
+		if (box.triangles.size() <= max_numberFaces) {
 			result.push_back(box);
+			list_box.pop();
+			std::cout << "box added to the final result"  << std::endl;
+			std::cout << result.size() << std::endl;
+			
 		}
-		*/
-		
+		else {
 			int axis = axisToDivide(box.tmax, box.tmin);
+
 
 			if (axis == 0) {
 				int x = (box.tmax.x() - box.tmin.x()) / 2;
@@ -374,16 +384,23 @@ vector<Box> Flyscene::divideBox(Box& box/*, int max_numberFaces*/) {
 				Eigen::Vector3f midMax = Eigen::Vector3f(x, box.tmax.y(), box.tmax.z());
 				Eigen::Vector3f midMin = Eigen::Vector3f(x, box.tmin.y(), box.tmin.z());
 
-
-
-
 				Box box1 = Box(box.tmin, midMax);
 				Box box2 = Box(midMin, box.tmax);
 
-				/*list_box.push(box1);
-				list_box.push(box2);*/
-				result.push_back(box1);
-				result.push_back(box2);
+				for (auto i = 0; i < box.triangles.size(); i++)
+				{
+					Tucano::Face face = box.triangles.at(i);
+					bool isInBox1 = isInBox(box1, face);
+					bool isInBox2 = isInBox(box2, face);
+				}
+
+				std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
+				std::cout << "number of triangles of box2: " << box2.triangles.size() << std::endl;
+
+				list_box.push(box1);
+				list_box.push(box2);
+				/*result.push_back(box1);
+				result.push_back(box2);*/
 
 			}
 			else if (axis == 1) {
@@ -395,11 +412,20 @@ vector<Box> Flyscene::divideBox(Box& box/*, int max_numberFaces*/) {
 				Box box1 = Box(box.tmin, midMax);
 				Box box2 = Box(midMin, box.tmax);
 
-				/*list_box.push(box1);
-				list_box.push(box2);*/
+				for (auto i = 0; i < box.triangles.size(); i++)
+				{
+					Tucano::Face face = box.triangles.at(i);
+					bool isInBox1 = isInBox(box1, face);
+					bool isInBox2 = isInBox(box2, face);
+				}
 
-				result.push_back(box1);
-				result.push_back(box2);
+				std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
+				std::cout << "number of triangles of box2: " << box2.triangles.size() << std::endl;
+
+				list_box.push(box1);
+				list_box.push(box2);
+				/*result.push_back(box1);
+				result.push_back(box2);*/
 			}
 			else {
 				int z = (box.tmax.z() - box.tmin.z()) / 2;
@@ -410,13 +436,28 @@ vector<Box> Flyscene::divideBox(Box& box/*, int max_numberFaces*/) {
 				Box box1 = Box(box.tmin, midMax);
 				Box box2 = Box(midMin, box.tmax);
 
-				/*list_box.push(box1);
-				list_box.push(box2);*/
+				for (auto i = 0; i < box.triangles.size(); i++)
+				{
+					Tucano::Face face = box.triangles.at(i);
+					bool isInBox1 = isInBox(box1, face);
+					bool isInBox2 = isInBox(box2, face);
+				}
 
-				result.push_back(box1);
-				result.push_back(box2);
+				std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
+				std::cout << "number of triangles of box2: " << box2.triangles.size() << std::endl;
+
+				list_box.push(box1);
+				list_box.push(box2);
+				/*result.push_back(box1);
+				result.push_back(box2);*/
 			}
-			n--;
+		}
+		/*std::cout << "size of the queue after adding wo boxes" << std::endl;
+		std::cout << list_box.size() << std::endl;*/
+		list_box.pop();
+		/*std::cout << "size of the queue after poping" << std::endl;
+		std::cout << list_box.size() << std::endl;*/
+		n--;
 	}
 	return result;
 }
@@ -430,9 +471,37 @@ int Flyscene::axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
 		if (max < diff) {
 			max = diff;
 			result = i;
-			//return 0;
 		}
 	}
 	return result;
+}
 
+
+
+
+
+bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
+	Eigen::Vector3f tmax = box.tmax;
+	Eigen::Vector3f tmin = box.tmin;
+
+	Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[0])).head<3>();
+	Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[1])).head<3>();
+	Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[2])).head<3>();
+
+	vector<Eigen::Vector3f> vertices;
+	vertices.push_back(v0);
+	vertices.push_back(v1);
+	vertices.push_back(v2);
+
+	for (auto i = 0; i < vertices.size(); i++)
+	{
+		if (tmax.x() >= vertices.at(i).x() && tmin.x() <= vertices.at(i).x() && tmax.y() >= vertices.at(i).y() 
+			&& tmin.y() <= vertices.at(i).y() && tmax.z() >= vertices.at(i).z() && tmin.z() <= vertices.at(i).z())
+		{
+			box.triangles.push_back(face);
+			return true;
+		}
+	}
+	
+	return false;
 }
