@@ -86,6 +86,8 @@ public:
 
   bool isInBox(Box& box, Tucano::Face& face);
 
+  Eigen::Vector3f averagePoint(Box& box);
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;

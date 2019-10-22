@@ -184,7 +184,7 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 		{
 			std::cout << "Box ID:" + i << std::endl;
 			std::cout << "Number of faces" + boxes.at(i).triangles.size() << std::endl;
-			//return Eigen::Vector3f(i/4, 1.0, 0);
+			return Eigen::Vector3f(i/30, 1.0, i/30);
 		}
 	}
 
@@ -353,6 +353,28 @@ bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Ve
 	return true;
 }
 
+Eigen::Vector3f Flyscene::averagePoint(Box& box) {
+
+	Eigen::Vector3f average_point;
+	float sum_x = 0;
+	float sum_y = 0;
+	float sum_z = 0;
+
+	for (auto i = 0; i < box.triangles.size(); i++)
+	{
+		for (auto n = 0; n < 3; n++)
+		{
+			Eigen::Vector3f v = (mesh.getShapeModelMatrix() * mesh.getVertex(box.triangles.at(i).vertex_ids[n])).head<3>();
+			sum_x += v.x();
+			sum_y += v.y();
+			sum_z += v.z();
+		}
+	}
+	float size = box.triangles.size() * 3;
+	return Eigen::Vector3f(sum_x / size, sum_y / size, sum_z / size);
+}
+
+
 vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 
 
@@ -375,38 +397,15 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 			std::cout << result.size() << std::endl;
 			
 		}
-		else if (box.triangles.size() == 0) {
-			list_box.pop();
-		}
-		else {
+		else 
+		{
 			int axis = axisToDivide(box.tmax, box.tmin);
 			std::cout << "division on axis : " << axis << std::endl;
 
-			Eigen::Vector3f average_point;
-			float sum_x = 0;
-			float sum_y = 0;
-			float sum_z = 0;
-
-			for (size_t i = 0; i < box.triangles.size(); i++)
-			{
-				for (auto n = 0; n < 3; n++)
-				{
-					Eigen::Vector3f v = (mesh.getShapeModelMatrix() * mesh.getVertex(box.triangles.at(i).vertex_ids[n])).head<3>();
-
-
-
-					sum_x += v.x();
-					sum_y += v.y();
-					sum_z += v.z();
-				}
-			}
-			float size = box.triangles.size() * 3;
-			average_point = Eigen::Vector3f(sum_x/size, sum_y/size, sum_z/size);
-
+			Eigen::Vector3f average_point = averagePoint(box);
 			std::cout << "average_point : " << average_point << std::endl;
 
 			if (axis == 0) {
-
 				float x = average_point.x();
 
 				Eigen::Vector3f midMax = Eigen::Vector3f(x, box.tmax.y(), box.tmax.z());
@@ -435,7 +434,6 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 				list_box.push(box2);
 				/*result.push_back(box1);
 				result.push_back(box2);*/
-
 			}
 			else if (axis == 1) {
 				float y = average_point.y();
@@ -497,16 +495,12 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 				/*result.push_back(box1);
 				result.push_back(box2);*/
 			}
-
 			std::cout << "size of the queue after adding wo boxes" << std::endl;
 			std::cout << list_box.size() << std::endl;
 			list_box.pop();
 			std::cout << "size of the queue after poping" << std::endl;
 			std::cout << list_box.size() << std::endl;
-			
 		}
-
-		n--;
 	}
 	return result;
 }
