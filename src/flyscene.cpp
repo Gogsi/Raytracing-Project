@@ -14,7 +14,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/cube.obj");
+                                    "resources/models/dodgeColorTest.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -58,7 +58,7 @@ void Flyscene::initialize(int width, int height) {
 
   // create the array of boxes
   Box box = Box(mesh);
-  this->boxes = divideBox(box, 4);
+  this->boxes = divideBox(box, 1000);
 
 }
 
@@ -359,14 +359,15 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 	vector<Box> result;
 	std::queue<Box> list_box;
 	list_box.push(bigBox);
-	int n = 1;
+	int n = 10;
 	while (list_box.size() > 0 )
 	{
 		/*std::cout << "size of the queue before taking the first element" << std::endl;
 		std::cout << list_box.size() << std::endl;*/
 		Box box = list_box.front();
-		std::cout << "number of triangles" << std::endl;
-		std::cout << box.triangles.size() << std::endl;
+		std::cout << " " << std::endl;
+		std::cout << "number of triangles : "<< box.triangles.size() << std::endl;
+		
 		if (box.triangles.size() <= max_numberFaces) {
 			result.push_back(box);
 			list_box.pop();
@@ -376,10 +377,30 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 		}
 		else {
 			int axis = axisToDivide(box.tmax, box.tmin);
+			std::cout << "division on axis : " << axis << std::endl;
 
+			Eigen::Vector3f average_point;
+			float sum_x = 0;
+			float sum_y = 0;
+			float sum_z = 0;
+
+			for (size_t i = 0; i < box.triangles.size(); i++)
+			{
+				for (auto n = 0; n < 3; n++)
+				{
+					sum_x += mesh.getVertex(box.triangles.at(i).vertex_ids[n]).x();
+					sum_y += mesh.getVertex(box.triangles.at(i).vertex_ids[n]).y();
+					sum_z += mesh.getVertex(box.triangles.at(i).vertex_ids[n]).z();
+				}
+			}
+			float size = box.triangles.size() * 3;
+			average_point = Eigen::Vector3f(sum_x/size, sum_y/size, sum_z/size);
+
+			std::cout << "average_point : " << average_point << std::endl;
 
 			if (axis == 0) {
-				int x = (box.tmax.x() - box.tmin.x()) / 2;
+
+				int x = average_point.x();
 
 				Eigen::Vector3f midMax = Eigen::Vector3f(x, box.tmax.y(), box.tmax.z());
 				Eigen::Vector3f midMin = Eigen::Vector3f(x, box.tmin.y(), box.tmin.z());
@@ -392,6 +413,12 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 					Tucano::Face face = box.triangles.at(i);
 					bool isInBox1 = isInBox(box1, face);
 					bool isInBox2 = isInBox(box2, face);
+					if (isInBox1) {
+						box1.triangles.push_back(face);
+					}
+					if (isInBox2) {
+						box2.triangles.push_back(face);
+					}
 				}
 
 				std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
@@ -404,7 +431,7 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 
 			}
 			else if (axis == 1) {
-				int y = (box.tmax.y() - box.tmin.y()) / 2;
+				int y = average_point.y();
 
 				Eigen::Vector3f midMax = Eigen::Vector3f(box.tmax.x(), y, box.tmax.z());
 				Eigen::Vector3f midMin = Eigen::Vector3f(box.tmin.x(), y, box.tmin.z());
@@ -417,6 +444,12 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 					Tucano::Face face = box.triangles.at(i);
 					bool isInBox1 = isInBox(box1, face);
 					bool isInBox2 = isInBox(box2, face);
+					if (isInBox1) {
+						box1.triangles.push_back(face);
+					}
+					if (isInBox2) {
+						box2.triangles.push_back(face);
+					}
 				}
 
 				std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
@@ -428,7 +461,7 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 				result.push_back(box2);*/
 			}
 			else {
-				int z = (box.tmax.z() - box.tmin.z()) / 2;
+				int z = average_point.z();
 
 				Eigen::Vector3f midMax = Eigen::Vector3f(box.tmax.x(), box.tmax.y(), z);
 				Eigen::Vector3f midMin = Eigen::Vector3f(box.tmin.x(), box.tmin.y(), z);
@@ -441,6 +474,12 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 					Tucano::Face face = box.triangles.at(i);
 					bool isInBox1 = isInBox(box1, face);
 					bool isInBox2 = isInBox(box2, face);
+					if (isInBox1) {
+						box1.triangles.push_back(face);
+					}
+					if (isInBox2) {
+						box2.triangles.push_back(face);
+					}
 				}
 
 				std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
@@ -468,7 +507,7 @@ int Flyscene::axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
 	for (auto i = 0; i < 3; i++)
 	{
 		float diff = tmax[i] - tmin[i];
-		if (max < diff) {
+		if (max <= diff) {
 			max = diff;
 			result = i;
 		}
@@ -495,10 +534,10 @@ bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
 
 	for (auto i = 0; i < vertices.size(); i++)
 	{
-		if (tmax.x() >= vertices.at(i).x() && tmin.x() <= vertices.at(i).x() && tmax.y() >= vertices.at(i).y() 
-			&& tmin.y() <= vertices.at(i).y() && tmax.z() >= vertices.at(i).z() && tmin.z() <= vertices.at(i).z())
+		Eigen::Vector3f vertex = vertices.at(i);
+		if (tmax.x() >= vertex.x() && tmin.x() <= vertex.x() && tmax.y() >= vertex.y()
+			&& tmin.y() <= vertex.y() && tmax.z() >= vertex.z() && tmin.z() <= vertex.z())
 		{
-			box.triangles.push_back(face);
 			return true;
 		}
 	}
