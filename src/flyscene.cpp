@@ -16,7 +16,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/dodgeColorTest.obj");
+                                    "resources/models/twoObjects.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -65,6 +65,7 @@ void Flyscene::initialize(int width, int height) {
 }
 
 void Flyscene::paintGL(void) {
+  
 
   // update the camera view matrix with the last mouse interactions
   flycamera.updateViewMatrix();
