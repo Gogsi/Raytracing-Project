@@ -1,5 +1,8 @@
 #include "flyscene.hpp"
 #include <GLFW/glfw3.h>
+#include <queue>
+
+using namespace std;
 
 void Flyscene::initialize(int width, int height) {
   // initiliaze the Phong Shading effect for the Opengl Previewer
@@ -11,7 +14,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/cube.obj");
+                                    "resources/models/dodgeColorTest.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -53,7 +56,9 @@ void Flyscene::initialize(int width, int height) {
   //   std::cout<<"face   normal "<<face.normal.transpose() << std::endl << std::endl;
   // }
 
-
+  // create the array of boxes
+  Box box = Box(mesh);
+  this->boxes = divideBox(box, 1000);
 
 }
 
@@ -142,6 +147,8 @@ void Flyscene::raytraceScene(int width, int height) {
   // origin of the ray is always the camera center
   Eigen::Vector3f origin = flycamera.getCenter();
   Eigen::Vector3f screen_coords;
+
+  std::cout << boxes.size() << std::endl;
   int size = image_size[1];
   // for every pixel shoot a ray from the origin through the pixel coords
   for (int j = 0; j < image_size[1]; ++j) {
@@ -151,7 +158,7 @@ void Flyscene::raytraceScene(int width, int height) {
       // launch raytracing for the given ray and write result to pixel data
       pixel_data[i][j] = traceRay(origin, screen_coords);
     }
-	std::cout << j*100/size << std::endl;
+	std::cout << float(j)*100/size << std::endl;
   }
 
   // write the ray tracing result to a PPM image
@@ -166,6 +173,31 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 
 	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
 	Eigen::Vector3f newDir = dest - origin; 
+<<<<<<< HEAD
+	
+
+	//std::cout << boxes.size() << std::endl;
+	Tucano::Face closest_triangle;
+	float smallestT = INFINITY;
+	for (auto i = 0; i < boxes.size() ; i++)
+	{
+		Box curr_box = boxes.at(i);
+		HitInfo result_box = intersectBox(curr_box, origin, newDir);
+
+		if (result_box.t != INFINITY)
+		{
+			HitInfo result_triangle = intersectTriangle(curr_box.triangles ,origin , newDir);
+			if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
+				smallestT = result_triangle.t;
+				closest_triangle = curr_box.triangles.at(result_triangle.faceId);		
+			}	
+		}
+	}
+	//std::cout << "Box hit: " << i << std::endl;
+	if (smallestT != INFINITY) {
+		auto mat = phong.getMaterial(closest_triangle.material_id);
+		return mat.getDiffuse();
+=======
 	Box box = Box(mesh);
 	HitInfo result = intersectBox(box, newOrigin, newDir);
 
@@ -174,9 +206,10 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 		auto mat = phong.getMaterial(face.material_id);
 		return mat.getDiffuse();*/
 		return Eigen::Vector3f(1.0, 0, 0);
+>>>>>>> master
 	}
 
-	return Eigen::Vector3f(0, 1.0, 0);
+	return Eigen::Vector3f(1.0, 0, 0);
 }
 
 HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
@@ -215,10 +248,10 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 	return HitInfo{ smallestT, smallestFace};
 }
 
-HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
+HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f& origin,
 	Eigen::Vector3f& dir) {
 
-	int max = mesh.getNumberOfFaces();
+	int max = faces.size();
 
 	float smallestT = INFINITY;
 	int smallestFace = -1;
@@ -226,7 +259,7 @@ HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
 	// for all faces....
 	for (size_t i = 0; i < max; i++)
 	{
-		Tucano::Face curFace = mesh.getFace(i);
+		Tucano::Face curFace = faces.at(i);
 
 		Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[0])).head<3>();
 		Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[1])).head<3>();
@@ -280,7 +313,7 @@ HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3
 		tymax = (box.tmin.y() - origin.y()) * invDir.y();
 	}
 	if ((tmin > tymax) || (tymin > tmax)) {
-		return HitInfo{ INFINITY, -1};
+		return HitInfo{ INFINITY, -1 };
 	}
 	if (tymin > tmin) {
 		tmin = tymin;
@@ -335,3 +368,155 @@ bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Ve
 	if (s < 0 || t < 0 || s + t > 1) return false;
 	return true;
 }
+
+Eigen::Vector3f Flyscene::averagePoint(Box& box) {
+
+	Eigen::Vector3f average_point;
+	float sum_x = 0;
+	float sum_y = 0;
+	float sum_z = 0;
+
+	for (auto i = 0; i < box.triangles.size(); i++)
+	{
+		for (auto n = 0; n < 3; n++)
+		{
+			Eigen::Vector3f v = (mesh.getShapeModelMatrix() * mesh.getVertex(box.triangles.at(i).vertex_ids[n])).head<3>();
+			sum_x += v.x();
+			sum_y += v.y();
+			sum_z += v.z();
+		}
+	}
+	float size = box.triangles.size() * 3;
+	return Eigen::Vector3f(sum_x / size, sum_y / size, sum_z / size);
+}
+
+
+vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
+
+
+	vector<Box> result;
+	std::queue<Box> list_box;
+	list_box.push(bigBox);
+	while (list_box.size() > 0 )
+	{
+		/*std::cout << "size of the queue before taking the first element" << std::endl;
+		std::cout << list_box.size() << std::endl;*/
+		Box box = list_box.front();
+		std::cout << " " << std::endl;
+		std::cout << "number of triangles : "<< box.triangles.size() << std::endl;
+		
+		if (box.triangles.size() <= max_numberFaces && box.triangles.size() > 0) {
+			result.push_back(box);
+			list_box.pop();
+			std::cout << "box added to the final result"  << std::endl;
+			std::cout << result.size() << std::endl;
+			
+		}
+		else 
+		{
+			int axis = axisToDivide(box.tmax, box.tmin);
+			std::cout << "division on axis : " << axis << std::endl;
+
+			Eigen::Vector3f average_point = averagePoint(box);
+			std::cout << "average_point : " << average_point << std::endl;
+
+			Eigen::Vector3f midMax;
+			Eigen::Vector3f midMin;
+
+			if (axis == 0) {
+				float x = average_point.x();
+
+				midMax = Eigen::Vector3f(x, box.tmax.y(), box.tmax.z());
+				midMin = Eigen::Vector3f(x, box.tmin.y(), box.tmin.z());
+
+			}
+			else if (axis == 1) {
+				float y = average_point.y();
+
+				midMax = Eigen::Vector3f(box.tmax.x(), y, box.tmax.z());
+				midMin = Eigen::Vector3f(box.tmin.x(), y, box.tmin.z());
+			}
+			else {
+				float z = average_point.z();
+
+				midMax = Eigen::Vector3f(box.tmax.x(), box.tmax.y(), z);
+				midMin = Eigen::Vector3f(box.tmin.x(), box.tmin.y(), z);
+
+			}
+
+			Box box1 = Box(box.tmin, midMax);
+			Box box2 = Box(midMin, box.tmax);
+
+			for (auto i = 0; i < box.triangles.size(); i++)
+			{
+				Tucano::Face face = box.triangles.at(i);
+				bool isInBox1 = isInBox(box1, face);
+				bool isInBox2 = isInBox(box2, face);
+				if (isInBox1) {
+					box1.triangles.push_back(face);
+				}
+				if (isInBox2) {
+					box2.triangles.push_back(face);
+				}
+			}
+
+			std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
+			std::cout << "number of triangles of box2: " << box2.triangles.size() << std::endl;
+
+			list_box.push(box1);
+			list_box.push(box2);
+
+			std::cout << "size of the queue after adding two boxes" << std::endl;
+			std::cout << list_box.size() << std::endl;
+			list_box.pop();
+			std::cout << "size of the queue after poping" << std::endl;
+			std::cout << list_box.size() << std::endl;
+		}
+	}
+	return result;
+}
+
+int Flyscene::axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
+	float max = std::numeric_limits<float>::min();
+	int result = -1;
+	for (auto i = 0; i < 3; i++)
+	{
+		float diff = tmax[i] - tmin[i];
+		if (max <= diff) {
+			max = diff;
+			result = i;
+		}
+	}
+	return result;
+}
+
+
+
+
+
+bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
+	Eigen::Vector3f tmax = box.tmax;
+	Eigen::Vector3f tmin = box.tmin;
+
+	Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[0])).head<3>();
+	Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[1])).head<3>();
+	Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[2])).head<3>();
+
+	vector<Eigen::Vector3f> vertices;
+	vertices.push_back(v0);
+	vertices.push_back(v1);
+	vertices.push_back(v2);
+
+	for (auto i = 0; i < vertices.size(); i++)
+	{
+		Eigen::Vector3f vertex = vertices.at(i);
+		if (tmax.x() >= vertex.x() && tmin.x() <= vertex.x() && tmax.y() >= vertex.y()
+			&& tmin.y() <= vertex.y() && tmax.z() >= vertex.z() && tmin.z() <= vertex.z())
+		{
+			return true;
+		}
+	}
+	
+	return false;
+}
+
