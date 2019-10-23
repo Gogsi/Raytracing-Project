@@ -1,6 +1,7 @@
 #include "flyscene.hpp"
 #include <GLFW/glfw3.h>
 #include <queue>
+#include <thread> 
 
 using namespace std;
 
@@ -14,7 +15,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/dodgeColorTest.obj");
+                                    "resources/models/cube.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -58,7 +59,7 @@ void Flyscene::initialize(int width, int height) {
 
   // create the array of boxes
   Box box = Box(mesh);
-  this->boxes = divideBox(box, 1000);
+  this->boxes = divideBox(box, 8);
 
 }
 
@@ -150,21 +151,38 @@ void Flyscene::raytraceScene(int width, int height) {
 
   std::cout << boxes.size() << std::endl;
   int size = image_size[1];
-  // for every pixel shoot a ray from the origin through the pixel coords
-  for (int j = 0; j < image_size[1]; ++j) {
-    for (int i = 0; i < image_size[0]; ++i) {
-      // create a ray from the camera passing through the pixel (i,j)
-      screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
-      // launch raytracing for the given ray and write result to pixel data
-      pixel_data[i][j] = traceRay(origin, screen_coords);
-    }
-	std::cout << float(j)*100/size << std::endl;
+
+  int number_threads = 8;
+  vector<thread> threads;
+
+  for (auto i = 0; i < number_threads; i++) {
+	  thread curr_thread(&Flyscene::updating_pixels, this, std::ref(pixel_data), std::ref(origin), std::ref(image_size), number_threads, i);
+	  threads.push_back(std::move(curr_thread));
+  }
+
+  for (auto i = 0; i < threads.size(); i++) {
+	  //std::cout << i << std::endl;
+	  threads.at(i).join();
+	  std::cout << i << std::endl;
   }
 
   // write the ray tracing result to a PPM image
   Tucano::ImageImporter::writePPMImage("result.ppm", pixel_data);
   std::cout << "ray tracing done! " << std::endl;
 }
+
+void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id) {
+	// for every pixel shoot a ray from the origin through the pixel coords
+	for (int j = thread_id; j < image_size[1]; j += number_threads) {
+		for (int i = 0; i < image_size[0]; i++) {
+			// create a ray from the camera passing through the pixel (i,j)
+			Eigen::Vector3f screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
+			// launch raytracing for the given ray and write result to pixel data
+			pixel_data[i][j] = traceRay(origin, screen_coords);
+		}
+	}
+}
+
 
 
 Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,

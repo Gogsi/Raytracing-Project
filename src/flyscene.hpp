@@ -15,6 +15,7 @@
 #include <tucano/utils/imageIO.hpp>
 #include <tucano/utils/mtlIO.hpp>
 #include <tucano/utils/objimporter.hpp>
+#include <thread> 
 
 #include "hitInfo.h"
 #include "box.h"
@@ -87,6 +88,8 @@ public:
   bool isInBox(Box& box, Tucano::Face& face);
 
   Eigen::Vector3f averagePoint(Box& box);
+
+  void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
 private:
   // A simple phong shader for rendering meshes
