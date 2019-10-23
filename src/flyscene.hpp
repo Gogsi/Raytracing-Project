@@ -86,6 +86,11 @@ public:
 
   Eigen::Vector3f multiply(Eigen::Vector3f a, Eigen::Vector3f b);
 
+  bool canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
+
+  vector<Eigen::Vector3f> getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n);
+
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;

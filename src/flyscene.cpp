@@ -220,6 +220,37 @@ Eigen::Vector3f Flyscene::multiply(Eigen::Vector3f a, Eigen::Vector3f b) {
 	return Eigen::Vector3f(x,y,x);
 }
 
+bool Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
+{
+	Eigen::Vector3f direction = (lightPos - position).normalized();
+	float directionSize = (lightPos - position).norm();
+
+	HitInfo hit = intersectTriangle(position, direction);
+	return hit.t <= directionSize;
+}
+
+vector<Eigen::Vector3f> Flyscene::getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n)
+{
+	Eigen::Vector3f notNormal = Eigen::Vector3f(1.0, 0.0, 0.0);
+	if (notNormal == normal || notNormal == -normal) {
+		notNormal = Eigen::Vector3f(1.0, 1.0, 0.0).normalized();
+	}
+
+	Eigen::Vector3f radiusVector = normal.cross(notNormal).normalized() * radius;
+	float theta = M_PI * 2 / n;
+	Eigen::AngleAxisf rotation = Eigen::AngleAxisf(theta, normal);
+
+	vector<Eigen::Vector3f> res;
+	res.push_back(radiusVector);
+
+	for (int i = 0; i < n - 1; i++) {
+		radiusVector = rotation * radiusVector;
+		res.push_back(radiusVector);
+	}
+
+	return res;
+}
+
 HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 	Eigen::Vector3f& dir) {
 
