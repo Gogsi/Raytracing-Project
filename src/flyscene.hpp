@@ -75,12 +75,19 @@ public:
 
   HitInfo intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 
-  HitInfo intersectTriangle(Eigen::Vector3f origin, Eigen::Vector3f dir);
+  HitInfo intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f origin, Eigen::Vector3f dir);
 
-  HitInfo intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest);
+  HitInfo intersectBox(Box& box, Eigen::Vector3f origin, Eigen::Vector3f dest);
 
   bool isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2);
 
+  vector<Box> divideBox(Box& box, int max_numberFaces);
+
+  int axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin);
+
+  bool isInBox(Box& box, Tucano::Face& face);
+
+  Eigen::Vector3f averagePoint(Box& box);
   Eigen::Vector3f Shader(int bounce, HitInfo hit, Ray ray);
 
   Eigen::Vector3f reflect(Eigen::Vector3f light, Eigen::Vector3f normal);
@@ -90,7 +97,6 @@ public:
   bool canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
 
   vector<Eigen::Vector3f> getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n);
-
 
 private:
   // A simple phong shader for rendering meshes
@@ -123,6 +129,9 @@ private:
 
   /// MTL materials
   vector<Tucano::Material::Mtl> materials;
+
+  // list of bounding boxes
+  vector<Box> boxes;
 };
 
 #endif // FLYSCENE

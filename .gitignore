@@ -5,3 +5,5 @@
 *.tlog
 *.idb
 .vs/
+x64/Debug/
+out/
