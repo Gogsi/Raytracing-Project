@@ -4,6 +4,8 @@
 
 using namespace std;
 
+#define MAX_BOUNCES 2
+
 void Flyscene::initialize(int width, int height) {
   // initiliaze the Phong Shading effect for the Opengl Previewer
   phong.initialize();
@@ -156,7 +158,7 @@ void Flyscene::raytraceScene(int width, int height) {
       // create a ray from the camera passing through the pixel (i,j)
       screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
       // launch raytracing for the given ray and write result to pixel data
-      pixel_data[i][j] = traceRay(origin, screen_coords);
+      pixel_data[i][j] = traceRay(0 , Ray(origin, screen_coords - origin));
     }
 	std::cout << float(j)*100/size << std::endl;
   }
@@ -167,38 +169,118 @@ void Flyscene::raytraceScene(int width, int height) {
 }
 
 
-Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
-                                   Eigen::Vector3f &dest) {
-	Eigen::Vector3f newOrigin = origin;
+Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 
-	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
-	Eigen::Vector3f newDir = dest - origin; 
-	
+
 
 	//std::cout << boxes.size() << std::endl;
 	Tucano::Face closest_triangle;
+	HitInfo smallestHit;
 	float smallestT = INFINITY;
-	for (auto i = 0; i < boxes.size() ; i++)
+	for (auto i = 0; i < boxes.size(); i++)
 	{
 		Box curr_box = boxes.at(i);
-		HitInfo result_box = intersectBox(curr_box, origin, newDir);
+		HitInfo result_box = intersectBox(curr_box, ray.getOrigin(), ray.getDirection());
 
 		if (result_box.t != INFINITY)
 		{
-			HitInfo result_triangle = intersectTriangle(curr_box.triangles ,origin , newDir);
+			HitInfo result_triangle = intersectTriangle(curr_box.triangles, ray.getOrigin(), ray.getDirection());
 			if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
 				smallestT = result_triangle.t;
-				closest_triangle = curr_box.triangles.at(result_triangle.faceId);		
-			}	
+				smallestHit = result_triangle;
+				closest_triangle = curr_box.triangles.at(result_triangle.faceId);
+			}
 		}
 	}
 	//std::cout << "Box hit: " << i << std::endl;
 	if (smallestT != INFINITY) {
-		auto mat = phong.getMaterial(closest_triangle.material_id);
-		return mat.getDiffuse();
+		return Shader(bounce, smallestHit, ray);
+
+		return Eigen::Vector3f(1.0, 0, 0);
+	}
+}
+
+Eigen::Vector3f Flyscene::Shader(int bounce, HitInfo hit, Ray ray) {
+
+	Tucano::Face face = mesh.getFace(hit.faceId);
+	auto mat = materials[face.material_id];
+
+	Eigen::Vector3f normalN = hit.normal;
+
+	// LIGHT
+	Eigen::Vector3f lightIntensity = Eigen::Vector3f(1.0, 1.0, 1.0);
+	Eigen::Vector3f lightPosition = lightrep.getCentroid(); //for now
+	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
+	Eigen::Vector3f reflectedLight = reflect(-lightDirection, normalN);
+
+	// EYE
+	Eigen::Vector3f eyeDirection = (ray.getOrigin() - hit.point).normalized();
+	float dotted = eyeDirection.dot(reflectedLight.normalized());
+
+	Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
+
+	// RECURSION
+	if (bounce < MAX_BOUNCES) {
+		// calc reflectedRay
+		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
+		reflectedColor = traceRay(bounce + 1, reflectedRay);
 	}
 
-	return Eigen::Vector3f(1.0, 0, 0);
+	// AMBIENT DIFFUSE SPECULAR
+
+	Eigen::Vector3f diffuse = std::max(normalN.dot(lightDirection), 0.0f) * mat.getDiffuse().cwiseProduct( lightIntensity);
+
+	Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
+
+	Eigen::Vector3f specular = multiply(lightIntensity, mat.getSpecular()) * std::pow(std::max(dotted, 0.0f), mat.getShininess());
+
+	Eigen::Vector3f color = ambient + diffuse + specular;
+
+	return color + mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
+	
+}
+
+Eigen::Vector3f Flyscene::reflect(Eigen::Vector3f light, Eigen::Vector3f normal) {
+	return  light - 2 * normal.dot(light) * normal;
+}
+
+Eigen::Vector3f Flyscene::multiply(Eigen::Vector3f a, Eigen::Vector3f b) {
+	float x = a.x() * b.x();
+	float y = a.y() * b.y();
+	float z = a.z() * b.z();
+	return Eigen::Vector3f(x,y,x);
+}
+
+bool Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
+{
+	Eigen::Vector3f direction = (lightPos - position).normalized();
+	float directionSize = (lightPos - position).norm();
+
+	//HitInfo hit = intersectTriangle(std::vector<Face<(), position, direction);
+	//return hit.t <= directionSize;
+	return false;
+}
+
+vector<Eigen::Vector3f> Flyscene::getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n)
+{
+	Eigen::Vector3f notNormal = Eigen::Vector3f(1.0, 0.0, 0.0);
+	if (notNormal == normal || notNormal == -normal) {
+		notNormal = Eigen::Vector3f(1.0, 1.0, 0.0).normalized();
+	}
+
+	Eigen::Vector3f radiusVector = normal.cross(notNormal).normalized() * radius;
+	float theta = M_PI * 2 / n;
+	Eigen::AngleAxisf rotation = Eigen::AngleAxisf(theta, normal);
+
+	vector<Eigen::Vector3f> res;
+	res.push_back(radiusVector);
+
+	for (int i = 0; i < n - 1; i++) {
+		radiusVector = rotation * radiusVector;
+		res.push_back(radiusVector);
+	}
+
+	return res;
 }
 
 HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
@@ -236,14 +318,15 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 
 	return HitInfo{ smallestT, smallestFace};
 }
-
-HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f& origin,
-	Eigen::Vector3f& dir) {
+HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f origin,
+	Eigen::Vector3f dir) {
 
 	int max = faces.size();
 
 	float smallestT = INFINITY;
 	int smallestFace = -1;
+	Eigen::Vector3f smallestHitPoint = Eigen::Vector3f(0, 0, 0);
+	Eigen::Vector3f smallestNormal = Eigen::Vector3f(0, 0, 0);
 
 	// for all faces....
 	for (size_t i = 0; i < max; i++)
@@ -263,21 +346,23 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 		if (denom != 0.0) {
 			float t = (D - origin.dot(normalizeNormal)) / denom;
 
-			Eigen::Vector3f hit = origin + t * dir;
+			Eigen::Vector3f hitPoint = origin + t * dir;
 
-			if (t >= 0 && isInTriangle(hit, v0, v1, v2)) {
+			if (t >= 0 && isInTriangle(hitPoint, v0, v1, v2)) {
 				if (t < smallestT) {
 					smallestT = t;
 					smallestFace = i;
+					smallestNormal = normalizeNormal;
+					smallestHitPoint = hitPoint;
 				}
 			}
 		}
 	}
 
-	return HitInfo { smallestT, smallestFace };
+	return HitInfo { smallestT, smallestFace, smallestNormal, smallestHitPoint };
 }
 
-HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest) {
+HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f origin, Eigen::Vector3f dest) {
 
 	Eigen::Vector3f dir = dest;
 	Eigen::Vector3f invDir = Eigen::Vector3f(1 / dir.x(), 1 / dir.y(), 1 / dir.z());
