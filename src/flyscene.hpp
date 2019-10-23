@@ -80,6 +80,12 @@ public:
 
   bool isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2);
 
+  Eigen::Vector3f Shader(int level, HitInfo hit, Eigen::Vector3f origin);
+
+  Eigen::Vector3f reflect(Eigen::Vector3f light, Eigen::Vector3f normal);
+
+  Eigen::Vector3f multiply(Eigen::Vector3f a, Eigen::Vector3f b);
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
