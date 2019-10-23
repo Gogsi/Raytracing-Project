@@ -74,7 +74,7 @@ public:
 
   HitInfo intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 
-  HitInfo intersectTriangle(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
+  HitInfo intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 
   HitInfo intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest);
 
