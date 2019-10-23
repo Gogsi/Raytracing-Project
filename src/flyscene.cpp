@@ -60,7 +60,7 @@ void Flyscene::initialize(int width, int height) {
 
   // create the array of boxes
   Box box = Box(mesh);
-  this->boxes = divideBox(box, 1000);
+  this->boxes = divideBox(box, 8);
 
 }
 
@@ -195,22 +195,23 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	}
 	//std::cout << "Box hit: " << i << std::endl;
 	if (smallestT != INFINITY) {
-		return Shader(bounce, smallestHit, ray);
-
-		return Eigen::Vector3f(1.0, 0, 0);
+		return Shader(bounce, closest_triangle, smallestHit, ray);
 	}
+
+	if(bounce == 0) return Eigen::Vector3f(1.0, 1.0, 1.0);
+	return Eigen::Vector3f(0.0, 0.0, 0.0);
 }
 
-Eigen::Vector3f Flyscene::Shader(int bounce, HitInfo hit, Ray ray) {
+Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray) {
 
-	Tucano::Face face = mesh.getFace(hit.faceId);
+	//Tucano::Face face = mesh.getFace(hit.faceId);
 	auto mat = materials[face.material_id];
 
 	Eigen::Vector3f normalN = hit.normal;
 
 	// LIGHT
 	Eigen::Vector3f lightIntensity = Eigen::Vector3f(1.0, 1.0, 1.0);
-	Eigen::Vector3f lightPosition = lightrep.getCentroid(); //for now
+	Eigen::Vector3f lightPosition = lights[0]; //for now
 	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
 	Eigen::Vector3f reflectedLight = reflect(-lightDirection, normalN);
 
@@ -308,7 +309,7 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 
 			Eigen::Vector3f hit = origin + t * dir;
 
-			if (t >= 0) {
+			if (t >= 1E-6) {
 				if (t < smallestT) {
 					smallestT = t;
 					smallestFace = i;
@@ -349,7 +350,7 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 
 			Eigen::Vector3f hitPoint = origin + t * dir;
 
-			if (t >= 0 && isInTriangle(hitPoint, v0, v1, v2)) {
+			if (t >= 1E-6 && isInTriangle(hitPoint, v0, v1, v2)) {
 				if (t < smallestT) {
 					smallestT = t;
 					smallestFace = i;
