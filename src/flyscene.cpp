@@ -1,6 +1,8 @@
 #include "flyscene.hpp"
 #include <GLFW/glfw3.h>
 
+#define MAX_BOUNCES 2
+
 void Flyscene::initialize(int width, int height) {
   // initiliaze the Phong Shading effect for the Opengl Previewer
   phong.initialize();
@@ -149,7 +151,7 @@ void Flyscene::raytraceScene(int width, int height) {
       // create a ray from the camera passing through the pixel (i,j)
       screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
       // launch raytracing for the given ray and write result to pixel data
-      pixel_data[i][j] = traceRay(origin, screen_coords);
+      pixel_data[i][j] = traceRay(0 , Ray(origin, screen_coords - origin));
     }
 	std::cout << j*100/size << std::endl;
   }
@@ -160,42 +162,47 @@ void Flyscene::raytraceScene(int width, int height) {
 }
 
 
-Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
-                                   Eigen::Vector3f &dest) {
-	Eigen::Vector3f newOrigin = origin;
+Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 
 	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
-	Eigen::Vector3f newDir = dest - origin; 
 	Box box = Box(mesh);
-	HitInfo result = intersectTriangle(origin, newDir);
+	HitInfo result = intersectTriangle(ray.getOrigin(), ray.getDirection());
 
 	if (result.t != INFINITY) {
 		
-		return Shader(2, result, origin);
+		// recursive call
+		return Shader(bounce, result, ray);
 		//return Eigen::Vector3f(1.0, 0, 0);
 	}
 
 	return Eigen::Vector3f(0, 1.0, 0);
 }
 
-Eigen::Vector3f Flyscene::Shader(int level, HitInfo hit, Eigen::Vector3f origin) {
+Eigen::Vector3f Flyscene::Shader(int bounce, HitInfo hit, Ray ray) {
 
 	Tucano::Face face = mesh.getFace(hit.faceId);
 	auto mat = materials[face.material_id];
 
 	Eigen::Vector3f normalN = hit.normal;
-	Eigen::Vector3f eyeDirection = (origin - hit.point).normalized();
-	// LIGHT
 
+	// LIGHT
 	Eigen::Vector3f lightIntensity = Eigen::Vector3f(1.0, 1.0, 1.0);
 	Eigen::Vector3f lightPosition = lightrep.getCentroid(); //for now
 	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
-	Eigen::Vector3f reflectedLight = reflect(-eyeDirection, normalN);
+	Eigen::Vector3f reflectedLight = reflect(-lightDirection, normalN);
 
 	// EYE
-
-	
+	Eigen::Vector3f eyeDirection = (ray.getOrigin() - hit.point).normalized();
 	float dotted = eyeDirection.dot(reflectedLight.normalized());
+
+	Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
+
+	// RECURSION
+	if (bounce < MAX_BOUNCES) {
+		// calc reflectedRay
+		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
+		reflectedColor = traceRay(bounce + 1, reflectedRay);
+	}
 
 	// AMBIENT DIFFUSE SPECULAR
 
@@ -205,7 +212,9 @@ Eigen::Vector3f Flyscene::Shader(int level, HitInfo hit, Eigen::Vector3f origin)
 
 	Eigen::Vector3f specular = multiply(lightIntensity, mat.getSpecular()) * std::pow(std::max(dotted, 0.0f), mat.getShininess());
 
-	return diffuse + specular;
+	Eigen::Vector3f color = ambient + diffuse + specular;
+
+	return color + mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 	
 }
 
@@ -256,8 +265,8 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 	return HitInfo{ smallestT, smallestFace};
 }
 
-HitInfo Flyscene::intersectTriangle(Eigen::Vector3f& origin,
-	Eigen::Vector3f& dir) {
+HitInfo Flyscene::intersectTriangle(Eigen::Vector3f origin,
+	Eigen::Vector3f dir) {
 
 	int max = mesh.getNumberOfFaces();
 

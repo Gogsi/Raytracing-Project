@@ -17,6 +17,7 @@
 #include <tucano/utils/objimporter.hpp>
 
 #include "hitInfo.h"
+#include "Ray.h"
 #include "box.h"
 
 class Flyscene {
@@ -70,17 +71,17 @@ public:
    * @param dest Other point on the ray, usually screen coordinates
    * @return a RGB color
    */
-  Eigen::Vector3f traceRay(Eigen::Vector3f &origin, Eigen::Vector3f &dest);
+  Eigen::Vector3f traceRay(int bounce, Ray ray);
 
   HitInfo intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 
-  HitInfo intersectTriangle(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
+  HitInfo intersectTriangle(Eigen::Vector3f origin, Eigen::Vector3f dir);
 
   HitInfo intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3f& dest);
 
   bool isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2);
 
-  Eigen::Vector3f Shader(int level, HitInfo hit, Eigen::Vector3f origin);
+  Eigen::Vector3f Shader(int bounce, HitInfo hit, Ray ray);
 
   Eigen::Vector3f reflect(Eigen::Vector3f light, Eigen::Vector3f normal);
 
