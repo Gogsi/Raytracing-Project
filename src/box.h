@@ -9,6 +9,8 @@ public:
 
 	vector<Tucano::Face> triangles;
 
+	vector<Box> children;
+
 	Box(Eigen::Vector3f tmin, Eigen::Vector3f tmax ) {
 		this->tmin = tmin;
 		this->tmax = tmax;

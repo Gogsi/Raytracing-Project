@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <queue>
 #include <thread> 
+#include <ctime>
 
 using namespace std;
 
@@ -60,7 +61,6 @@ void Flyscene::initialize(int width, int height) {
   // create the array of boxes
   Box box = Box(mesh);
   this->boxes = divideBox(box, 8);
-
 }
 
 void Flyscene::paintGL(void) {
@@ -132,6 +132,7 @@ void Flyscene::createDebugRay(const Eigen::Vector2f &mouse_pos) {
 
 void Flyscene::raytraceScene(int width, int height) {
   std::cout << "ray tracing ..." << std::endl;
+  std::clock_t c_start = std::clock();
 
   // if no width or height passed, use dimensions of current viewport
   Eigen::Vector2i image_size(width, height);
@@ -152,7 +153,7 @@ void Flyscene::raytraceScene(int width, int height) {
   std::cout << boxes.size() << std::endl;
   int size = image_size[1];
 
-  int number_threads = 8;
+  int number_threads = 16;
   vector<thread> threads;
 
   for (auto i = 0; i < number_threads; i++) {
@@ -163,11 +164,13 @@ void Flyscene::raytraceScene(int width, int height) {
   for (auto i = 0; i < threads.size(); i++) {
 	  //std::cout << i << std::endl;
 	  threads.at(i).join();
-	  std::cout << i << std::endl;
+	  //std::cout << i << std::endl;
   }
 
   // write the ray tracing result to a PPM image
   Tucano::ImageImporter::writePPMImage("result.ppm", pixel_data);
+  std::clock_t c_end = std::clock();
+  std::cout << "Time elapsed: " << (c_end - c_start) / (CLOCKS_PER_SEC*60) << "min"<< std::endl;
   std::cout << "ray tracing done! " << std::endl;
 }
 
@@ -453,11 +456,17 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 			Box box1 = Box(box.tmin, midMax);
 			Box box2 = Box(midMin, box.tmax);
 
+			// adding the children of the current box.
+			bigBox.children.push_back(box1);
+			bigBox.children.push_back(box1);
+
 			for (auto i = 0; i < box.triangles.size(); i++)
 			{
 				Tucano::Face face = box.triangles.at(i);
 				bool isInBox1 = isInBox(box1, face);
 				bool isInBox2 = isInBox(box2, face);
+
+				// adding the triangle to the list of trinagles if it lies in box1 or box2
 				if (isInBox1) {
 					box1.triangles.push_back(face);
 				}
@@ -496,10 +505,6 @@ int Flyscene::axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
 	return result;
 }
 
-
-
-
-
 bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
 	Eigen::Vector3f tmax = box.tmax;
 	Eigen::Vector3f tmin = box.tmin;
@@ -525,4 +530,3 @@ bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
 	
 	return false;
 }
-

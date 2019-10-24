@@ -23,7 +23,7 @@
 class Flyscene {
 
 public:
-  Flyscene(void) {}
+	Flyscene(void) {}
 
   /**
    * @brief Initializes the shader effect
