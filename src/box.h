@@ -11,6 +11,8 @@ public:
 
 	vector<Box> children;
 
+	Box() {};
+
 	Box(Eigen::Vector3f tmin, Eigen::Vector3f tmax ) {
 		this->tmin = tmin;
 		this->tmax = tmax;

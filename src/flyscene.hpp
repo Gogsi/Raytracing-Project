@@ -101,6 +101,8 @@ public:
 
   void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
+  void divideBox_KD(Box& box, int max_numberFaces);
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
@@ -137,6 +139,9 @@ private:
   vector<Box> boxes;
 
   vector<Tucano::Face> triangles;
+
+  // Root box
+  Box root_box;
 };
 
 #endif // FLYSCENE

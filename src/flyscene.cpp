@@ -65,8 +65,8 @@ void Flyscene::initialize(int width, int height) {
   // }
 
   // create the array of boxes
-  Box box = Box(mesh);
-  this->boxes = divideBox(box, 8);
+  this->root_box = Box(mesh);
+  divideBox(root_box, 8);
 }
 
 void Flyscene::paintGL(void) {
@@ -629,3 +629,92 @@ bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
 	
 	return false;
 }
+
+void Flyscene::divideBox_KD(Box& root_box, int max_numberFaces) {
+
+	std::queue<Box> list_box;
+	list_box.push(root_box);
+	while (list_box.size() > 0)
+	{
+		/*std::cout << "size of the queue before taking the first element" << std::endl;
+		std::cout << list_box.size() << std::endl;*/
+		Box box = list_box.front();
+		std::cout << " " << std::endl;
+		std::cout << "number of triangles : " << box.triangles.size() << std::endl;
+
+		if (box.triangles.size() <= max_numberFaces && box.triangles.size() > 0) {
+			result.push_back(box);
+			list_box.pop();
+			std::cout << "box added to the final result" << std::endl;
+			std::cout << result.size() << std::endl;
+
+		}
+		else
+		{
+			int axis = axisToDivide(box.tmax, box.tmin);
+			std::cout << "division on axis : " << axis << std::endl;
+
+			Eigen::Vector3f average_point = averagePoint(box);
+			std::cout << "average_point : " << average_point << std::endl;
+
+			Eigen::Vector3f midMax;
+			Eigen::Vector3f midMin;
+
+			if (axis == 0) {
+				float x = average_point.x();
+
+				midMax = Eigen::Vector3f(x, box.tmax.y(), box.tmax.z());
+				midMin = Eigen::Vector3f(x, box.tmin.y(), box.tmin.z());
+
+			}
+			else if (axis == 1) {
+				float y = average_point.y();
+
+				midMax = Eigen::Vector3f(box.tmax.x(), y, box.tmax.z());
+				midMin = Eigen::Vector3f(box.tmin.x(), y, box.tmin.z());
+			}
+			else {
+				float z = average_point.z();
+
+				midMax = Eigen::Vector3f(box.tmax.x(), box.tmax.y(), z);
+				midMin = Eigen::Vector3f(box.tmin.x(), box.tmin.y(), z);
+
+			}
+
+			Box box1 = Box(box.tmin, midMax);
+			Box box2 = Box(midMin, box.tmax);
+
+			// adding the children of the current box.
+			bigBox.children.push_back(box1);
+			bigBox.children.push_back(box1);
+
+			for (auto i = 0; i < box.triangles.size(); i++)
+			{
+				Tucano::Face face = box.triangles.at(i);
+				bool isInBox1 = isInBox(box1, face);
+				bool isInBox2 = isInBox(box2, face);
+
+				// adding the triangle to the list of trinagles if it lies in box1 or box2
+				if (isInBox1) {
+					box1.triangles.push_back(face);
+				}
+				if (isInBox2) {
+					box2.triangles.push_back(face);
+				}
+			}
+
+			std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
+			std::cout << "number of triangles of box2: " << box2.triangles.size() << std::endl;
+
+			list_box.push(box1);
+			list_box.push(box2);
+
+			std::cout << "size of the queue after adding two boxes" << std::endl;
+			std::cout << list_box.size() << std::endl;
+			list_box.pop();
+			std::cout << "size of the queue after poping" << std::endl;
+			std::cout << list_box.size() << std::endl;
+		}
+	}
+}
+
