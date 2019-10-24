@@ -194,6 +194,7 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 
 	// "dest" is the location of the current pixel in world space. Subtracting camera origin from it gives the ray direction.
 	Eigen::Vector3f newDir = dest - origin; 
+<<<<<<< HEAD
 	
 
 	//std::cout << boxes.size() << std::endl;
@@ -217,6 +218,16 @@ Eigen::Vector3f Flyscene::traceRay(Eigen::Vector3f &origin,
 	if (smallestT != INFINITY) {
 		auto mat = phong.getMaterial(closest_triangle.material_id);
 		return mat.getDiffuse();
+=======
+	Box box = Box(mesh);
+	HitInfo result = intersectBox(box, newOrigin, newDir);
+
+	if (result.t != INFINITY) {
+		/*Tucano::Face face = mesh.getFace(result.faceId);
+		auto mat = phong.getMaterial(face.material_id);
+		return mat.getDiffuse();*/
+		return Eigen::Vector3f(1.0, 0, 0);
+>>>>>>> master
 	}
 
 	return Eigen::Vector3f(1.0, 0, 0);
@@ -353,6 +364,7 @@ HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f& origin, Eigen::Vector3
 
 	return HitInfo{ tmin, -1 };
 }
+
 
 bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2)
 {
