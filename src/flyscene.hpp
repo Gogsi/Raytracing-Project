@@ -15,6 +15,7 @@
 #include <tucano/utils/imageIO.hpp>
 #include <tucano/utils/mtlIO.hpp>
 #include <tucano/utils/objimporter.hpp>
+#include <thread> 
 
 #include "hitInfo.h"
 #include "Ray.h"
@@ -23,7 +24,7 @@
 class Flyscene {
 
 public:
-  Flyscene(void) {}
+	Flyscene(void) {}
 
   /**
    * @brief Initializes the shader effect
@@ -97,6 +98,8 @@ public:
   bool canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
 
   vector<Eigen::Vector3f> getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n);
+
+  void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
 private:
   // A simple phong shader for rendering meshes

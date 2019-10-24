@@ -1,6 +1,8 @@
 #include "flyscene.hpp"
 #include <GLFW/glfw3.h>
 #include <queue>
+#include <thread> 
+#include <ctime>
 
 using namespace std;
 
@@ -16,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/twoObjects.obj");
+                                    "resources/models/cube.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -65,7 +67,6 @@ void Flyscene::initialize(int width, int height) {
   // create the array of boxes
   Box box = Box(mesh);
   this->boxes = divideBox(box, 8);
-
 }
 
 void Flyscene::paintGL(void) {
@@ -138,6 +139,7 @@ void Flyscene::createDebugRay(const Eigen::Vector2f &mouse_pos) {
 
 void Flyscene::raytraceScene(int width, int height) {
   std::cout << "ray tracing ..." << std::endl;
+  std::clock_t c_start = std::clock();
 
   // if no width or height passed, use dimensions of current viewport
   Eigen::Vector2i image_size(width, height);
@@ -157,27 +159,46 @@ void Flyscene::raytraceScene(int width, int height) {
 
   std::cout << boxes.size() << std::endl;
   int size = image_size[1];
-  // for every pixel shoot a ray from the origin through the pixel coords
-  for (int j = 0; j < image_size[1]; ++j) {
-    for (int i = 0; i < image_size[0]; ++i) {
-      // create a ray from the camera passing through the pixel (i,j)
-      screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
-      // launch raytracing for the given ray and write result to pixel data
-      pixel_data[i][j] = traceRay(0 , Ray(origin, screen_coords - origin));
-    }
-	std::cout << float(j)*100/size << std::endl;
+
+  // Threads
+  int number_threads = 16;
+  vector<thread> threads;
+
+  for (auto i = 0; i < number_threads; i++) {
+	  thread curr_thread(&Flyscene::updating_pixels, this, std::ref(pixel_data), std::ref(origin), std::ref(image_size), number_threads, i);
+	  threads.push_back(std::move(curr_thread));
+  }
+
+  for (auto i = 0; i < threads.size(); i++) {
+	  //std::cout << i << std::endl;
+	  threads.at(i).join();
+	  //std::cout << i << std::endl;
   }
 
   // write the ray tracing result to a PPM image
   Tucano::ImageImporter::writePPMImage("result.ppm", pixel_data);
+  std::clock_t c_end = std::clock();
+  std::cout << "Time elapsed: " << (c_end - c_start) / (CLOCKS_PER_SEC*60) << "min"<< std::endl;
   std::cout << "ray tracing done! " << std::endl;
 }
+
+void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id) {
+	// for every pixel shoot a ray from the origin through the pixel coords
+	for (int j = thread_id; j < image_size[1]; j += number_threads) {
+		for (int i = 0; i < image_size[0]; i++) {
+			// create a ray from the camera passing through the pixel (i,j)
+			Eigen::Vector3f screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
+			// launch raytracing for the given ray and write result to pixel data
+			pixel_data[i][j] = traceRay(0, Ray(origin, screen_coords - origin));
+		}
+	}
+}
+
 
 
 Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 
-
-
+	
 	//std::cout << boxes.size() << std::endl;
 	Tucano::Face closest_triangle;
 	HitInfo smallestHit;
@@ -225,20 +246,24 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 	Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
 
-	// RECURSION
+	//# define RECURSION
+#ifdef REFLECTIONS
 	if (bounce < MAX_BOUNCES) {
 		// calc reflectedRay
 		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
 		reflectedColor = traceRay(bounce + 1, reflectedRay);
 	}
+#endif
 
-	// AMBIENT DIFFUSE SPECULAR
+
+	//#define SHADOWS
+#ifdef SHADOWS
+	if (!canSeeLight(lightPosition, hit.point)) {
+		return mat.getAmbient().cwiseProduct(lightIntensity);
+	}
+#endif
 
 	Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
-
-	if (!canSeeLight(lightPosition, hit.point)) {
-		return ambient;
-	}
 
 	Eigen::Vector3f diffuse = std::max(normalN.dot(lightDirection), 0.0f) * mat.getDiffuse().cwiseProduct( lightIntensity);
 
@@ -530,11 +555,17 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 			Box box1 = Box(box.tmin, midMax);
 			Box box2 = Box(midMin, box.tmax);
 
+			// adding the children of the current box.
+			bigBox.children.push_back(box1);
+			bigBox.children.push_back(box1);
+
 			for (auto i = 0; i < box.triangles.size(); i++)
 			{
 				Tucano::Face face = box.triangles.at(i);
 				bool isInBox1 = isInBox(box1, face);
 				bool isInBox2 = isInBox(box2, face);
+
+				// adding the triangle to the list of trinagles if it lies in box1 or box2
 				if (isInBox1) {
 					box1.triangles.push_back(face);
 				}
@@ -573,10 +604,6 @@ int Flyscene::axisToDivide(Eigen::Vector3f& tmax, Eigen::Vector3f& tmin) {
 	return result;
 }
 
-
-
-
-
 bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
 	Eigen::Vector3f tmax = box.tmax;
 	Eigen::Vector3f tmin = box.tmin;
@@ -602,4 +629,3 @@ bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
 	
 	return false;
 }
-
