@@ -18,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/cube.obj");
+                                    "resources/models/twoObjects.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -66,7 +66,7 @@ void Flyscene::initialize(int width, int height) {
 
   // create the array of boxes
   Box box = Box(mesh);
-  this->boxes = divideBox(box, 8);
+  this->boxes = divideBox(box, 500);
 }
 
 void Flyscene::paintGL(void) {
@@ -194,11 +194,8 @@ void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eige
 	}
 }
 
-
-
 Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
-
-	
+		
 	//std::cout << boxes.size() << std::endl;
 	Tucano::Face closest_triangle;
 	HitInfo smallestHit;
@@ -236,7 +233,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 	// LIGHT
 	Eigen::Vector3f lightIntensity = Eigen::Vector3f(1.0, 1.0, 1.0);
-	Eigen::Vector3f lightPosition = lights[0]; //for now
+	Eigen::Vector3f lightPosition = lightrep.getShapeModelMatrix() * lightrep.getCentroid(); //for now
 	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
 	Eigen::Vector3f reflectedLight = reflect(-lightDirection, normalN);
 
@@ -246,14 +243,14 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 	Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
 
-	//# define RECURSION
-#ifdef REFLECTIONS
+	//# define REFLECTIONS
+//#ifdef REFLECTIONS
 	if (bounce < MAX_BOUNCES) {
 		// calc reflectedRay
 		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
 		reflectedColor = traceRay(bounce + 1, reflectedRay);
 	}
-#endif
+//#endif
 
 
 	//#define SHADOWS
@@ -267,7 +264,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 	Eigen::Vector3f diffuse = std::max(normalN.dot(lightDirection), 0.0f) * mat.getDiffuse().cwiseProduct( lightIntensity);
 
-	Eigen::Vector3f specular = multiply(lightIntensity, mat.getSpecular()) * std::pow(std::max(dotted, 0.0f), mat.getShininess());
+	Eigen::Vector3f specular = multiply(lightIntensity, mat.getSpecular()) * std::pow(std::max( dotted, 0.0f), mat.getShininess());
 
 	Eigen::Vector3f color = ambient + diffuse + specular;
 
@@ -276,7 +273,11 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 }
 
 Eigen::Vector3f Flyscene::reflect(Eigen::Vector3f light, Eigen::Vector3f normal) {
+	//float dot = -normal.dot(light);
+	//float len = 2.0f * dot;
+	//Eigen::Vector3f normalL = normal * len;
 	return  light - 2 * normal.dot(light) * normal;
+	//return normalL + light;
 }
 
 Eigen::Vector3f Flyscene::multiply(Eigen::Vector3f a, Eigen::Vector3f b) {
@@ -371,7 +372,7 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 		Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[1])).head<3>();
 		Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[2])).head<3>();
 
-		Eigen::Vector3f normalizeNormal = curFace.normal.normalized();
+		Eigen::Vector3f normalizeNormal = (mesh.getShapeModelMatrix().inverse().matrix().transpose() * Eigen::Vector4f(curFace.normal.x(), curFace.normal.y(), curFace.normal.z(), 0)).head<3>().normalized();
 
 		float D = normalizeNormal.dot(v0);
 
