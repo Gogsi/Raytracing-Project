@@ -555,10 +555,6 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 			Box box1 = Box(box.tmin, midMax);
 			Box box2 = Box(midMin, box.tmax);
 
-			// adding the children of the current box.
-			bigBox.children.push_back(box1);
-			bigBox.children.push_back(box1);
-
 			for (auto i = 0; i < box.triangles.size(); i++)
 			{
 				Tucano::Face face = box.triangles.at(i);
