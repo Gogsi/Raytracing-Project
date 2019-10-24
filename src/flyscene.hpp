@@ -132,6 +132,8 @@ private:
 
   // list of bounding boxes
   vector<Box> boxes;
+
+  vector<Tucano::Face> triangles;
 };
 
 #endif // FLYSCENE

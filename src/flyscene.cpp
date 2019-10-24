@@ -27,6 +27,10 @@ void Flyscene::initialize(int width, int height) {
     phong.addMaterial(materials[i]);
 
 
+  for (int i = 0; i < mesh.getNumberOfFaces(); ++i) {
+	  triangles.push_back(mesh.getFace(i));
+  }
+
 
   // set the color and size of the sphere to represent the light sources
   // same sphere is used for all sources
@@ -230,9 +234,13 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 	// AMBIENT DIFFUSE SPECULAR
 
-	Eigen::Vector3f diffuse = std::max(normalN.dot(lightDirection), 0.0f) * mat.getDiffuse().cwiseProduct( lightIntensity);
-
 	Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
+
+	if (!canSeeLight(lightPosition, hit.point)) {
+		return ambient;
+	}
+
+	Eigen::Vector3f diffuse = std::max(normalN.dot(lightDirection), 0.0f) * mat.getDiffuse().cwiseProduct( lightIntensity);
 
 	Eigen::Vector3f specular = multiply(lightIntensity, mat.getSpecular()) * std::pow(std::max(dotted, 0.0f), mat.getShininess());
 
@@ -258,9 +266,8 @@ bool Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
 	Eigen::Vector3f direction = (lightPos - position).normalized();
 	float directionSize = (lightPos - position).norm();
 
-	//HitInfo hit = intersectTriangle(std::vector<Face<(), position, direction);
-	//return hit.t <= directionSize;
-	return false;
+	HitInfo hit = intersectTriangle(this->triangles, position, direction);
+    return hit.t <= directionSize;
 }
 
 vector<Eigen::Vector3f> Flyscene::getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n)
@@ -350,7 +357,7 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 
 			Eigen::Vector3f hitPoint = origin + t * dir;
 
-			if (t >= 1E-6 && isInTriangle(hitPoint, v0, v1, v2)) {
+			if (t >= 1E-9 && isInTriangle(hitPoint, v0, v1, v2)) {
 				if (t < smallestT) {
 					smallestT = t;
 					smallestFace = i;
