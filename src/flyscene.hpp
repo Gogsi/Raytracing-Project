@@ -24,7 +24,7 @@
 class Flyscene {
 
 public:
-	Flyscene(void) {}
+	Flyscene(void) { this->root_box = Box(); }
 
   /**
    * @brief Initializes the shader effect
@@ -101,7 +101,11 @@ public:
 
   void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
-  void divideBox_KD(Box& box, int max_numberFaces);
+  void updating_pixels_KD(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
+
+  void divideBox_KD(int max_numberFaces);
+
+  Eigen::Vector3f traceRay_KD(Box& rootBox, int bounce, Ray ray);
 
 private:
   // A simple phong shader for rendering meshes
@@ -139,7 +143,7 @@ private:
   vector<Box> boxes;
 
   vector<Tucano::Face> triangles;
-
+public:
   // Root box
   Box root_box;
 };

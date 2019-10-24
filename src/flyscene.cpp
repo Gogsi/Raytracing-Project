@@ -64,9 +64,10 @@ void Flyscene::initialize(int width, int height) {
   //   std::cout<<"face   normal "<<face.normal.transpose() << std::endl << std::endl;
   // }
 
+  std::cout << "..." << std::endl;
   // create the array of boxes
   this->root_box = Box(mesh);
-  divideBox(root_box, 8);
+  divideBox_KD(8);
 }
 
 void Flyscene::paintGL(void) {
@@ -140,6 +141,8 @@ void Flyscene::createDebugRay(const Eigen::Vector2f &mouse_pos) {
 void Flyscene::raytraceScene(int width, int height) {
   std::cout << "ray tracing ..." << std::endl;
   std::clock_t c_start = std::clock();
+  auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
+  std::cout << "Time at the start : " << ctime(&timenow) << std::endl;
 
   // if no width or height passed, use dimensions of current viewport
   Eigen::Vector2i image_size(width, height);
@@ -157,7 +160,7 @@ void Flyscene::raytraceScene(int width, int height) {
   Eigen::Vector3f origin = flycamera.getCenter();
   Eigen::Vector3f screen_coords;
 
-  std::cout << boxes.size() << std::endl;
+  
   int size = image_size[1];
 
   // Threads
@@ -165,7 +168,7 @@ void Flyscene::raytraceScene(int width, int height) {
   vector<thread> threads;
 
   for (auto i = 0; i < number_threads; i++) {
-	  thread curr_thread(&Flyscene::updating_pixels, this, std::ref(pixel_data), std::ref(origin), std::ref(image_size), number_threads, i);
+	  thread curr_thread(&Flyscene::updating_pixels_KD, this, std::ref(pixel_data), std::ref(origin), std::ref(image_size), number_threads, i);
 	  threads.push_back(std::move(curr_thread));
   }
 
@@ -178,7 +181,9 @@ void Flyscene::raytraceScene(int width, int height) {
   // write the ray tracing result to a PPM image
   Tucano::ImageImporter::writePPMImage("result.ppm", pixel_data);
   std::clock_t c_end = std::clock();
-  std::cout << "Time elapsed: " << (c_end - c_start) / (CLOCKS_PER_SEC*60) << "min"<< std::endl;
+  auto timeend = chrono::system_clock::to_time_t(chrono::system_clock::now());
+  std::cout << "Time at the end : " << ctime(&timeend) << std::endl;
+  std::cout << "Time elapsed: " << (c_end - c_start) / (CLOCKS_PER_SEC*60) << " min"<< std::endl;
   std::cout << "ray tracing done! " << std::endl;
 }
 
@@ -194,7 +199,17 @@ void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eige
 	}
 }
 
-
+void Flyscene::updating_pixels_KD(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id) {
+	// for every pixel shoot a ray from the origin through the pixel coords
+	for (int j = thread_id; j < image_size[1]; j += number_threads) {
+		for (int i = 0; i < image_size[0]; i++) {
+			// create a ray from the camera passing through the pixel (i,j)
+			Eigen::Vector3f screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
+			// launch raytracing for the given ray and write result to pixel data
+			pixel_data[i][j] = traceRay_KD(root_box ,0 ,Ray(origin, screen_coords - origin));
+		}
+	}
+}
 
 Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 
@@ -317,8 +332,7 @@ vector<Eigen::Vector3f> Flyscene::getNPointsOnCircle(Eigen::Vector3f center, flo
 	return res;
 }
 
-HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
-	Eigen::Vector3f& dir) {
+HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir) {
 
 	int max = mesh.getNumberOfFaces();
 
@@ -352,8 +366,8 @@ HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin,
 
 	return HitInfo{ smallestT, smallestFace};
 }
-HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f origin,
-	Eigen::Vector3f dir) {
+
+HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f origin, Eigen::Vector3f dir) {
 
 	int max = faces.size();
 
@@ -452,7 +466,6 @@ HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f origin, Eigen::Vector3f
 	return HitInfo{ tmin, -1 };
 }
 
-
 bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2)
 {
 	Eigen::Vector3f u = v1 - v0;
@@ -497,7 +510,6 @@ Eigen::Vector3f Flyscene::averagePoint(Box& box) {
 	float size = box.triangles.size() * 3;
 	return Eigen::Vector3f(sum_x / size, sum_y / size, sum_z / size);
 }
-
 
 vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 
@@ -630,7 +642,7 @@ bool Flyscene::isInBox(Box& box, Tucano::Face& face) {
 	return false;
 }
 
-void Flyscene::divideBox_KD(Box& root_box, int max_numberFaces) {
+void Flyscene::divideBox_KD(int max_numberFaces) {
 
 	std::queue<Box> list_box;
 	list_box.push(root_box);
@@ -639,23 +651,17 @@ void Flyscene::divideBox_KD(Box& root_box, int max_numberFaces) {
 		/*std::cout << "size of the queue before taking the first element" << std::endl;
 		std::cout << list_box.size() << std::endl;*/
 		Box box = list_box.front();
-		std::cout << " " << std::endl;
 		std::cout << "number of triangles : " << box.triangles.size() << std::endl;
 
 		if (box.triangles.size() <= max_numberFaces && box.triangles.size() > 0) {
-			result.push_back(box);
 			list_box.pop();
-			std::cout << "box added to the final result" << std::endl;
-			std::cout << result.size() << std::endl;
-
+			std::cout << "hit a leaf!" << std::endl;
 		}
 		else
 		{
 			int axis = axisToDivide(box.tmax, box.tmin);
-			std::cout << "division on axis : " << axis << std::endl;
 
 			Eigen::Vector3f average_point = averagePoint(box);
-			std::cout << "average_point : " << average_point << std::endl;
 
 			Eigen::Vector3f midMax;
 			Eigen::Vector3f midMin;
@@ -685,8 +691,8 @@ void Flyscene::divideBox_KD(Box& root_box, int max_numberFaces) {
 			Box box2 = Box(midMin, box.tmax);
 
 			// adding the children of the current box.
-			bigBox.children.push_back(box1);
-			bigBox.children.push_back(box1);
+			box.children.push_back(box1);
+			box.children.push_back(box1);
 
 			for (auto i = 0; i < box.triangles.size(); i++)
 			{
@@ -703,18 +709,56 @@ void Flyscene::divideBox_KD(Box& root_box, int max_numberFaces) {
 				}
 			}
 
-			std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
-			std::cout << "number of triangles of box2: " << box2.triangles.size() << std::endl;
-
 			list_box.push(box1);
 			list_box.push(box2);
 
-			std::cout << "size of the queue after adding two boxes" << std::endl;
-			std::cout << list_box.size() << std::endl;
 			list_box.pop();
-			std::cout << "size of the queue after poping" << std::endl;
-			std::cout << list_box.size() << std::endl;
 		}
 	}
+	std::cout << "end" << std::endl;
 }
 
+Eigen::Vector3f Flyscene::traceRay_KD(Box& big_box, int bounce, Ray ray) {
+
+
+	//std::cout << boxes.size() << std::endl;
+	Tucano::Face closest_triangle;
+	HitInfo smallestHit;
+	float smallestT = INFINITY;
+	std::queue<Box> queue_boxes;
+	queue_boxes.push(big_box);
+
+	while (queue_boxes.size() > 0) {
+		Box box = queue_boxes.front();
+
+		HitInfo result_box = intersectBox(box, ray.getOrigin(), ray.getDirection());
+
+		if (result_box.t != INFINITY) {
+			if (box.children.size() != 0)
+			{
+				queue_boxes.push(box.children.at(0));
+				queue_boxes.push(box.children.at(1));
+			}
+			else {
+				HitInfo result_triangle = intersectTriangle(box.triangles, ray.getOrigin(), ray.getDirection());
+				if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
+					smallestT = result_triangle.t;
+					smallestHit = result_triangle;
+					closest_triangle = box.triangles.at(result_triangle.faceId);
+				}
+			}
+		}
+		queue_boxes.pop();
+	}
+
+	//std::cout << "smallestT: " << smallestT << std::endl;
+
+	//std::cout << "Box hit: " << i << std::endl;
+	if (smallestT != INFINITY) {
+		return Shader(bounce, closest_triangle, smallestHit, ray);
+	}
+
+	if (bounce == 0) return Eigen::Vector3f(1.0, 1.0, 1.0);
+
+	return Eigen::Vector3f(0.0, 0.0, 0.0);
+}
