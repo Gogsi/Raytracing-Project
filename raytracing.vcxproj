@@ -90,7 +90,10 @@ xcopy "$(SolutionDir)dependencies\glew\bin\win\x64" "$(OutputPath)" /y /i</Comma
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\box.h" />
     <ClInclude Include="src\flyscene.hpp" />
+    <ClInclude Include="src\hitInfo.h" />
+    <ClInclude Include="src\Ray.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
