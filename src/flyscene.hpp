@@ -89,6 +89,7 @@ public:
   bool isInBox(Box& box, Tucano::Face& face);
 
   Eigen::Vector3f averagePoint(Box& box);
+
   Eigen::Vector3f Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray);
 
   Eigen::Vector3f reflect(Eigen::Vector3f light, Eigen::Vector3f normal);
@@ -126,6 +127,7 @@ private:
 
   /// A very thin cylinder to draw a debug ray
   Tucano::Shapes::Cylinder ray = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
+  Tucano::Shapes::Cylinder lightRay = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
 
   // Scene meshes
   Tucano::Mesh mesh;

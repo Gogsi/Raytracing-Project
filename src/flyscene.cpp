@@ -18,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/cube.obj");
+                                    "resources/models/twoObjects.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -66,7 +66,7 @@ void Flyscene::initialize(int width, int height) {
 
   // create the array of boxes
   Box box = Box(mesh);
-  this->boxes = divideBox(box, 8);
+  this->boxes = divideBox(box, 10);
 }
 
 void Flyscene::paintGL(void) {
@@ -135,6 +135,7 @@ void Flyscene::createDebugRay(const Eigen::Vector2f &mouse_pos) {
   // place the camera representation (frustum) on current camera location, 
   camerarep.resetModelMatrix();
   camerarep.setModelMatrix(flycamera.getViewMatrix().inverse());
+
 }
 
 void Flyscene::raytraceScene(int width, int height) {
@@ -197,7 +198,6 @@ void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eige
 
 
 Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
-
 	
 	//std::cout << boxes.size() << std::endl;
 	Tucano::Face closest_triangle;
@@ -233,46 +233,47 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 	auto mat = materials[face.material_id];
 
 	Eigen::Vector3f normalN = hit.normal;
+	Eigen::Vector3f totalColor = Eigen::Vector3f(0.0, 0.0, 0.0);
 
-	// LIGHT
-	Eigen::Vector3f lightIntensity = Eigen::Vector3f(1.0, 1.0, 1.0);
-	Eigen::Vector3f lightPosition = lights[0]; //for now
-	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
-	Eigen::Vector3f reflectedLight = reflect(-lightDirection, normalN);
+	for (auto lightPosition : lights)
+	{
+		// LIGHT
+		Eigen::Vector3f lightIntensity = Eigen::Vector3f(1.0, 1.0, 1.0);
+		Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
+		Eigen::Vector3f reflectedLight = reflect(-lightDirection, normalN);
 
-	// EYE
-	Eigen::Vector3f eyeDirection = (ray.getOrigin() - hit.point).normalized();
-	float dotted = eyeDirection.dot(reflectedLight.normalized());
+		// EYE
+		Eigen::Vector3f eyeDirection = (ray.getOrigin() - hit.point).normalized();
+		float dotted = eyeDirection.dot(reflectedLight.normalized());
 
-	Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
+		Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
 
-	//# define RECURSION
-#ifdef REFLECTIONS
-	if (bounce < MAX_BOUNCES) {
-		// calc reflectedRay
-		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
-		reflectedColor = traceRay(bounce + 1, reflectedRay);
+
+		if (bounce < MAX_BOUNCES) {
+			// calc reflectedRay
+			Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
+			reflectedColor = traceRay(bounce + 1, reflectedRay);
+		}
+
+		if (!canSeeLight(lightPosition, hit.point)) {
+			totalColor += mat.getAmbient().cwiseProduct(lightIntensity) + mat.getSpecular().cwiseProduct(reflectedColor);
+			continue;
+		}
+
+
+
+		Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
+
+		Eigen::Vector3f diffuse = std::max(normalN.dot(lightDirection), 0.0f) * mat.getDiffuse().cwiseProduct(lightIntensity);
+
+		Eigen::Vector3f specular = multiply(lightIntensity, mat.getSpecular()) * std::pow(std::max(dotted, 0.0f), 33);
+
+		Eigen::Vector3f color = ambient + diffuse + specular;
+
+		totalColor += color + mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 	}
-#endif
-
-
-	//#define SHADOWS
-#ifdef SHADOWS
-	if (!canSeeLight(lightPosition, hit.point)) {
-		return mat.getAmbient().cwiseProduct(lightIntensity);
-	}
-#endif
-
-	Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
-
-	Eigen::Vector3f diffuse = std::max(normalN.dot(lightDirection), 0.0f) * mat.getDiffuse().cwiseProduct( lightIntensity);
-
-	Eigen::Vector3f specular = multiply(lightIntensity, mat.getSpecular()) * std::pow(std::max(dotted, 0.0f), mat.getShininess());
-
-	Eigen::Vector3f color = ambient + diffuse + specular;
-
-	return color + mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 	
+	return totalColor;
 }
 
 Eigen::Vector3f Flyscene::reflect(Eigen::Vector3f light, Eigen::Vector3f normal) {
@@ -288,11 +289,21 @@ Eigen::Vector3f Flyscene::multiply(Eigen::Vector3f a, Eigen::Vector3f b) {
 
 bool Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
 {
-	Eigen::Vector3f direction = (lightPos - position).normalized();
-	float directionSize = (lightPos - position).norm();
+	Eigen::Vector3f toLight = lightPos - position;
+	HitInfo hit = intersectTriangle(triangles, position, toLight);
+	float toLightLength = toLight.norm();
+	bool behind = false;
 
-	HitInfo hit = intersectTriangle(this->triangles, position, direction);
-    return hit.t <= directionSize;
+	if (hit.t != INFINITY)
+	{
+
+		if (hit.t > toLightLength)
+		{
+			behind = true;
+		}
+
+	}
+	return (hit.t == INFINITY || behind == true);
 }
 
 vector<Eigen::Vector3f> Flyscene::getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n)
@@ -371,7 +382,7 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 		Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[1])).head<3>();
 		Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(curFace.vertex_ids[2])).head<3>();
 
-		Eigen::Vector3f normalizeNormal = curFace.normal.normalized();
+		Eigen::Vector3f normalizeNormal = (mesh.getShapeModelMatrix().inverse().matrix().transpose() * Eigen::Vector4f(curFace.normal.x(), curFace.normal.y(), curFace.normal.z(), 0)).head<3>().normalized();
 
 		float D = normalizeNormal.dot(v0);
 
@@ -382,7 +393,7 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 
 			Eigen::Vector3f hitPoint = origin + t * dir;
 
-			if (t >= 1E-9 && isInTriangle(hitPoint, v0, v1, v2)) {
+			if (t >= 0.001 && isInTriangle(hitPoint, v0, v1, v2)) {
 				if (t < smallestT) {
 					smallestT = t;
 					smallestFace = i;
