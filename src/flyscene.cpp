@@ -19,10 +19,10 @@ void Flyscene::initialize(int width, int height) {
                                     "resources/models/twoObjects.obj");
 
 
+
+
   // normalize the model (scale to unit cube and center at origin)
   mesh.normalizeModelMatrix();
-
-  std::cout << mesh.getModelMatrix().matrix() << std::endl;
 
   // pass all the materials to the Phong Shader
   for (int i = 0; i < materials.size(); ++i)
@@ -32,7 +32,6 @@ void Flyscene::initialize(int width, int height) {
   for (int i = 0; i < mesh.getNumberOfFaces(); ++i) {
 	  triangles.push_back(mesh.getFace(i));
   }
-
 
   // set the color and size of the sphere to represent the light sources
   // same sphere is used for all sources
@@ -68,6 +67,29 @@ void Flyscene::initialize(int width, int height) {
   Box box = Box(mesh);
   this->boxes = divideBox(box, 8);
 
+
+
+  box1 = Tucano::Shapes::Box(box.tmax.x() - box.tmin.x(), box.tmax.y() - box.tmin.y(), box.tmax.z() - box.tmin.z());
+  Affine3f matrix = box1.getModelMatrix();
+  matrix.translate(mesh.getShapeModelMatrix() * mesh.getObjectCenter());
+  box1.setModelMatrix(matrix);
+
+
+
+  //for (auto i = 0; i < boxes.size(); i++)
+  //{
+	 // Box boxon = boxes.at(i);
+	 // Tucano::Shapes::Box boxo = Tucano::Shapes::Box(boxon.tmax.x() - boxon.tmin.x(), boxon.tmax.y() - boxon.tmin.y(), boxon.tmax.z() - boxon.tmin.z());
+	 // Affine3f matrix = boxo.getModelMatrix();
+	 // matrix.translate(mesh.getShapeModelMatrix() * mesh.getObjectCenter());
+
+	 // boxo.setModelMatrix(matrix);
+	 // boxo.setColor(Eigen::Vector4f(i / boxes.size(), i / boxes.size(), i / boxes.size(), i/boxes.size()));
+  //}
+
+  cout << box1.shapeMatrix()->matrix() << endl;
+  cout << mesh.shapeMatrix()->matrix() << endl;
+
 }
 
 void Flyscene::paintGL(void) {
@@ -94,10 +116,11 @@ void Flyscene::paintGL(void) {
 	  rays.at(i).render(flycamera, scene_light);
   }
 
-
   //ray.render(flycamera, scene_light); // changing
   camerarep.render(flycamera, scene_light);
 
+
+  box1.render(flycamera, scene_light);
   // render ray tracing light sources as yellow spheres
   for (int i = 0; i < lights.size(); ++i) {
     lightrep.resetModelMatrix();
@@ -108,6 +131,7 @@ void Flyscene::paintGL(void) {
   // render coordinate system at lower right corner
   flycamera.renderAtCorner();
 }
+
 
 void Flyscene::simulate(GLFWwindow *window) {
   // Update the camera.

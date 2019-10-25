@@ -101,6 +101,10 @@ public:
 
   void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
 
+  Tucano::Shapes::Box box1;
+
+  vector<Tucano::Shapes::Box> render_boxes;
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
@@ -127,10 +131,9 @@ private:
   /// A very thin cylinder to draw a debug ray
   Tucano::Shapes::Cylinder ray = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
 
-  Tucano::Shapes::Box box1 = Tucano::Shapes::Box();
 
   //vector<Tucano::Shapes::Box> boxs;
-
+  
   // Scene meshes
   Tucano::Mesh mesh;
 
