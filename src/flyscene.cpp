@@ -67,7 +67,12 @@ void Flyscene::initialize(int width, int height) {
   std::cout << "..." << std::endl;
   // create the array of boxes
   this->root_box = Box(mesh);
-  this->boxes = divideBox(root_box, 10);
+  
+  // KD Trees :
+  divideBox_KD(10);
+
+  // Flat structure:
+  //this->boxes = divideBox(root_box, 10);
 }
 
 void Flyscene::paintGL(void) {
