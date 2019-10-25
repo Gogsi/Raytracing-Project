@@ -9,6 +9,7 @@
 #include <tucano/effects/phongmaterialshader.hpp>
 #include <tucano/mesh.hpp>
 #include <tucano/shapes/camerarep.hpp>
+#include <tucano/shapes/box.hpp>
 #include <tucano/shapes/cylinder.hpp>
 #include <tucano/shapes/sphere.hpp>
 #include <tucano/utils/flycamera.hpp>
@@ -98,6 +99,8 @@ public:
 
   vector<Eigen::Vector3f> getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n);
 
+  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
@@ -124,6 +127,10 @@ private:
   /// A very thin cylinder to draw a debug ray
   Tucano::Shapes::Cylinder ray = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
 
+  Tucano::Shapes::Box box1 = Tucano::Shapes::Box();
+
+  //vector<Tucano::Shapes::Box> boxs;
+
   // Scene meshes
   Tucano::Mesh mesh;
 
@@ -134,6 +141,8 @@ private:
   vector<Box> boxes;
 
   vector<Tucano::Face> triangles;
+
+  vector< Tucano::Shapes::Cylinder> rays;
 };
 
 #endif // FLYSCENE
