@@ -53,6 +53,8 @@ public:
    * @brief Add a new light source
    */
   void addLight(void) { lights.push_back(flycamera.getCenter()); }
+  void addSphericalLight(void) { sphericalLights.push_back(make_pair(flycamera.getCenter(), 0.01)); }
+
 
   /**
    * @brief Create a debug ray at the current camera location and passing
@@ -92,21 +94,13 @@ public:
 
   Eigen::Vector3f Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray);
 
-  Eigen::Vector3f reflect(Eigen::Vector3f light, Eigen::Vector3f normal);
-
-  Eigen::Vector3f multiply(Eigen::Vector3f a, Eigen::Vector3f b);
-
   bool canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
-
-  vector<Eigen::Vector3f> getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n);
 
   void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
-  void updating_pixels_KD(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
-
   void divideBox_KD(int max_numberFaces);
 
-  Eigen::Vector3f traceRay_KD(Box& rootBox, int bounce, Ray ray);
+  Eigen::Vector3f calculateColor(int bounce, Eigen::Vector3f lightPosition, HitInfo hit, Eigen::Vector3f normalN, Ray ray, Tucano::Material::Mtl mat);
 
 private:
   // A simple phong shader for rendering meshes
@@ -127,6 +121,7 @@ private:
 
   // light sources for ray tracing
   vector<Eigen::Vector3f> lights;
+  vector<pair<Eigen::Vector3f, float>> sphericalLights;
 
   // Scene light represented as a camera
   Tucano::Camera scene_light;

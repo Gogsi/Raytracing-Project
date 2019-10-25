@@ -36,7 +36,7 @@ public:
 		float dot = viewDirection.dot(normal);
 		float numerator = (1 - pow(dot, 2));
 		float root = sqrt(1 - (numerator / pow(refractionIndex, 2)));
-		Eigen::Vector3f t = (1/refractionIndex) * (viewDirection - dot * normal) - normal * root;
+		Eigen::Vector3f t = (1 / refractionIndex) * (viewDirection - dot * normal) - normal * root;
 		return Ray(point, t);
 	}
 };
