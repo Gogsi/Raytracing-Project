@@ -1,7 +1,7 @@
 #include "flyscene.hpp"
 #include <GLFW/glfw3.h>
 #include <queue>
-#include <thread> 
+#include <thread>
 #include <ctime>
 
 using namespace std;
@@ -18,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/cube.obj");
+                                    "resources/models/twoObjects.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -67,7 +67,7 @@ void Flyscene::initialize(int width, int height) {
   std::cout << "..." << std::endl;
   // create the array of boxes
   this->root_box = Box(mesh);
-  divideBox_KD(8);
+  this->boxes = divideBox(root_box, 10);
 }
 
 void Flyscene::paintGL(void) {
@@ -159,9 +159,6 @@ void Flyscene::raytraceScene(int width, int height) {
   // origin of the ray is always the camera center
   Eigen::Vector3f origin = flycamera.getCenter();
   Eigen::Vector3f screen_coords;
-
-  
-  int size = image_size[1];
 
   // Threads
   int number_threads = 16;
@@ -519,26 +516,18 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 	list_box.push(bigBox);
 	while (list_box.size() > 0 )
 	{
-		/*std::cout << "size of the queue before taking the first element" << std::endl;
-		std::cout << list_box.size() << std::endl;*/
 		Box box = list_box.front();
-		std::cout << " " << std::endl;
-		std::cout << "number of triangles : "<< box.triangles.size() << std::endl;
 		
 		if (box.triangles.size() <= max_numberFaces && box.triangles.size() > 0) {
 			result.push_back(box);
 			list_box.pop();
-			std::cout << "box added to the final result"  << std::endl;
-			std::cout << result.size() << std::endl;
 			
 		}
 		else 
 		{
 			int axis = axisToDivide(box.tmax, box.tmin);
-			std::cout << "division on axis : " << axis << std::endl;
 
 			Eigen::Vector3f average_point = averagePoint(box);
-			std::cout << "average_point : " << average_point << std::endl;
 
 			Eigen::Vector3f midMax;
 			Eigen::Vector3f midMin;
@@ -567,10 +556,6 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 			Box box1 = Box(box.tmin, midMax);
 			Box box2 = Box(midMin, box.tmax);
 
-			// adding the children of the current box.
-			bigBox.children.push_back(box1);
-			bigBox.children.push_back(box1);
-
 			for (auto i = 0; i < box.triangles.size(); i++)
 			{
 				Tucano::Face face = box.triangles.at(i);
@@ -586,19 +571,14 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 				}
 			}
 
-			std::cout << "number of triangles of box1: " << box1.triangles.size() << std::endl;
-			std::cout << "number of triangles of box2: " << box2.triangles.size() << std::endl;
-
 			list_box.push(box1);
 			list_box.push(box2);
 
-			std::cout << "size of the queue after adding two boxes" << std::endl;
-			std::cout << list_box.size() << std::endl;
 			list_box.pop();
-			std::cout << "size of the queue after poping" << std::endl;
-			std::cout << list_box.size() << std::endl;
+
 		}
 	}
+	std::cout << "Number of boxes: " << result.size() << std::endl;
 	return result;
 }
 
@@ -646,16 +626,14 @@ void Flyscene::divideBox_KD(int max_numberFaces) {
 
 	std::queue<Box> list_box;
 	list_box.push(root_box);
+	int number_leafs = 0;
 	while (list_box.size() > 0)
 	{
-		/*std::cout << "size of the queue before taking the first element" << std::endl;
-		std::cout << list_box.size() << std::endl;*/
 		Box box = list_box.front();
-		std::cout << "number of triangles : " << box.triangles.size() << std::endl;
 
 		if (box.triangles.size() <= max_numberFaces && box.triangles.size() > 0) {
 			list_box.pop();
-			std::cout << "hit a leaf!" << std::endl;
+			number_leafs++;
 		}
 		else
 		{
@@ -715,13 +693,13 @@ void Flyscene::divideBox_KD(int max_numberFaces) {
 			list_box.pop();
 		}
 	}
-	std::cout << "end" << std::endl;
+	std::cout << "Number of leafs: " << number_leafs << std::endl;
 }
 
 Eigen::Vector3f Flyscene::traceRay_KD(Box& big_box, int bounce, Ray ray) {
 
 
-	//std::cout << boxes.size() << std::endl;
+	
 	Tucano::Face closest_triangle;
 	HitInfo smallestHit;
 	float smallestT = INFINITY;
