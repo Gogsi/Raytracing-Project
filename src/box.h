@@ -1,9 +1,11 @@
 #pragma once
 #include <tucano/mesh.hpp>
 #include <vector>
+
 using namespace std;
 
 class Box {
+
 public:
 	Eigen::Vector3f tmax, tmin;
 

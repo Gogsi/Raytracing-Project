@@ -18,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/twoObjects.obj");
+                                    "resources/models/dodgeColorTest.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -69,10 +69,19 @@ void Flyscene::initialize(int width, int height) {
   this->root_box = Box(mesh);
   
   // KD Trees :
-  divideBox_KD(10);
+  divideBox_KD(1000);
 
   // Flat structure:
-  //this->boxes = divideBox(root_box, 10);
+  //this->boxes = divideBox(root_box, 1000);
+  
+  // if u want to visualize the bounding boxeswith flat structure
+  // #define show_flat
+
+  // if u want to visualize the bounding boxes with the KD trees 
+  //#define show_KD
+
+ // showBoxes();
+
 }
 
 void Flyscene::paintGL(void) {
@@ -90,9 +99,26 @@ void Flyscene::paintGL(void) {
   scene_light.resetViewMatrix();
   scene_light.viewMatrix()->translate(-lights.back());
 
+  // render the bounding boxes:
+#ifdef show_flat 
+  for (auto i = 0; i < bounding_boxes.size(); i++)
+  {
+	  bounding_boxes.at(i).render(flycamera, scene_light);
+  }
+#endif
+
+#ifdef show_KD 
+  for (auto i = 0; i < bounding_boxes.size(); i++)
+  {
+	  bounding_boxes.at(i).render(flycamera, scene_light);
+  }
+#endif
+
   // render the scene using OpenGL and one light source
   phong.render(mesh, flycamera, scene_light);
 
+
+	
   // render the ray and camera representation for ray debug
   ray.render(flycamera, scene_light);
   camerarep.render(flycamera, scene_light);
@@ -171,7 +197,7 @@ void Flyscene::raytraceScene(int width, int height) {
   vector<thread> threads;
 
   for (auto i = 0; i < number_threads; i++) {
-	  thread curr_thread(&Flyscene::updating_pixels_KD, this, std::ref(pixel_data), std::ref(origin), std::ref(image_size), number_threads, i);
+	  thread curr_thread(&Flyscene::updating_pixels, this, std::ref(pixel_data), std::ref(origin), std::ref(image_size), number_threads, i);
 	  threads.push_back(std::move(curr_thread));
   }
 
@@ -186,7 +212,7 @@ void Flyscene::raytraceScene(int width, int height) {
   std::clock_t c_end = std::clock();
   auto timeend = chrono::system_clock::to_time_t(chrono::system_clock::now());
   std::cout << "Time at the end : " << ctime(&timeend) << std::endl;
-  std::cout << "Time elapsed: " << (c_end - c_start) / (CLOCKS_PER_SEC*60) << " min"<< std::endl;
+  std::cout << "Time elapsed: " << 1000*(c_end - c_start) / (CLOCKS_PER_SEC) << " ms"<< std::endl;
   std::cout << "ray tracing done! " << std::endl;
 }
 
@@ -212,6 +238,38 @@ void Flyscene::updating_pixels_KD(vector<vector<Eigen::Vector3f>>& pixel_data, E
 			pixel_data[i][j] = traceRay_KD(root_box ,0 ,Ray(origin, screen_coords - origin));
 		}
 	}
+}
+
+
+void Flyscene::showBoxes() {
+
+	for (auto i = 0; i < boxes.size(); i++)
+	{
+		Box curr_box = this->boxes.at(i);
+		Tucano::Shapes::Box helper = Tucano::Shapes::Box(curr_box.tmax.x() - curr_box.tmin.x(), curr_box.tmax.y() - curr_box.tmin.y(),
+			curr_box.tmax.z() - curr_box.tmin.z());
+
+		Affine3f matrix = Affine3f::Identity();
+
+		mesh.resetModelMatrix();
+		mesh.setModelMatrix(matrix);
+
+		Eigen::Vector3f translation_vector = Eigen::Vector3f((curr_box.tmax.x() + curr_box.tmin.x()) / 2, (curr_box.tmax.y() + curr_box.tmin.y()) / 2,
+			(curr_box.tmax.z() + curr_box.tmin.z()) / 2);
+
+
+		matrix.translate(translation_vector);
+		helper.setModelMatrix(matrix);
+
+
+		float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		float g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		float b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+
+		Eigen::Vector4f color = Vector4f(r, g, b, 0.1);
+		helper.setColor(color);
+		this->bounding_boxes.push_back(helper);
+	}	
 }
 
 Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
@@ -542,6 +600,7 @@ vector<Box> Flyscene::divideBox(Box& bigBox, int max_numberFaces) {
 		else 
 		{
 			int axis = axisToDivide(box.tmax, box.tmin);
+			//std::cout << "Number of boxes: " << result.size() << std::endl;
 
 			Eigen::Vector3f average_point = averagePoint(box);
 
@@ -648,6 +707,9 @@ void Flyscene::divideBox_KD(int max_numberFaces) {
 		Box box = list_box.front();
 
 		if (box.triangles.size() <= max_numberFaces && box.triangles.size() > 0) {
+#ifdef show_KD
+			this->boxes.push_back(box);
+#endif // show_KD
 			list_box.pop();
 			number_leafs++;
 		}

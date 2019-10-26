@@ -11,6 +11,7 @@
 #include <tucano/shapes/camerarep.hpp>
 #include <tucano/shapes/cylinder.hpp>
 #include <tucano/shapes/sphere.hpp>
+#include <tucano/shapes/box.hpp>
 #include <tucano/utils/flycamera.hpp>
 #include <tucano/utils/imageIO.hpp>
 #include <tucano/utils/mtlIO.hpp>
@@ -108,6 +109,9 @@ public:
 
   Eigen::Vector3f traceRay_KD(Box& rootBox, int bounce, Ray ray);
 
+  void showBoxes();
+
+
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
@@ -134,6 +138,9 @@ private:
   /// A very thin cylinder to draw a debug ray
   Tucano::Shapes::Cylinder ray = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
   Tucano::Shapes::Cylinder lightRay = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
+
+  // List of bounding boxes to show:
+  vector<Tucano::Shapes::Box> bounding_boxes;
 
   // Scene meshes
   Tucano::Mesh mesh;
