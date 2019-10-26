@@ -18,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/bunny.obj");
+                                    "resources/models/twoObjects.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -72,7 +72,7 @@ void Flyscene::initialize(int width, int height) {
  // divideBox_KD(1000);
 
   // Flat structure:
-  this->boxes = divideBox(root_box, 1000);
+  this->boxes = divideBox(root_box, 10);
   
   // if u want to visualize the bounding boxeswith flat structure
    #define show_flat
@@ -210,19 +210,32 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 	for (auto i = 0; i < boxes.size(); i++)
 	{
 		Box curr_box = boxes.at(i);
-		HitInfo result_box = intersectBox(curr_box, origin, dir);
-
-
-		if (result_box.t != INFINITY && result_box.t > 0)
-		{
-			
-			ray_hitbox.push_back(bounding_boxes.at(i));
-
+		if (curr_box.isInBox(origin)) {
 			HitInfo result_triangle = intersectTriangle(curr_box.triangles, origin, dir);
 			if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
 				smallestT = result_triangle.t;
 				smallestHit = result_triangle;
 				closest_triangle = curr_box.triangles.at(result_triangle.faceId);
+			}
+			else {
+				continue;
+			}
+		}
+		else {
+			HitInfo result_box = intersectBox(curr_box, origin, dir);
+
+
+			if (result_box.t != INFINITY && result_box.t > 0)
+			{
+
+				ray_hitbox.push_back(bounding_boxes.at(i));
+
+				HitInfo result_triangle = intersectTriangle(curr_box.triangles, origin, dir);
+				if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
+					smallestT = result_triangle.t;
+					smallestHit = result_triangle;
+					closest_triangle = curr_box.triangles.at(result_triangle.faceId);
+				}
 			}
 		}
 	}
