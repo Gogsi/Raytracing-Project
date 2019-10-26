@@ -1,13 +1,36 @@
 #pragma once
 #include <tucano/mesh.hpp>
 #include <vector>
+
 using namespace std;
 
 class Box {
+
 public:
 	Eigen::Vector3f tmax, tmin;
 
 	vector<Tucano::Face> triangles;
+
+	vector<Box> children;
+
+	Box() { 
+		this->tmin = Eigen::Vector3f(0, 0, 0);
+		this->tmax = Eigen::Vector3f(0, 0, 0);
+	};
+	Box(const Box& other) {
+		this->children = other.children;
+		this->tmin = other.tmin;
+		this->tmax = other.tmax;
+		this->triangles = other.triangles;
+	};
+
+	Box& operator= (const Box& other) {
+		this->children = other.children;
+		this->tmin = other.tmin;
+		this->tmax = other.tmax;
+		this->triangles = other.triangles;
+		return *this;
+	};
 
 	Box(Eigen::Vector3f tmin, Eigen::Vector3f tmax ) {
 		this->tmin = tmin;

@@ -9,13 +9,14 @@
 #include <tucano/effects/phongmaterialshader.hpp>
 #include <tucano/mesh.hpp>
 #include <tucano/shapes/camerarep.hpp>
-#include <tucano/shapes/box.hpp>
 #include <tucano/shapes/cylinder.hpp>
 #include <tucano/shapes/sphere.hpp>
+#include <tucano/shapes/box.hpp>
 #include <tucano/utils/flycamera.hpp>
 #include <tucano/utils/imageIO.hpp>
 #include <tucano/utils/mtlIO.hpp>
 #include <tucano/utils/objimporter.hpp>
+#include <thread> 
 
 #include "hitInfo.h"
 #include "Ray.h"
@@ -24,7 +25,7 @@
 class Flyscene {
 
 public:
-  Flyscene(void) {}
+	Flyscene(void) { this->root_box = Box(); }
 
   /**
    * @brief Initializes the shader effect
@@ -89,6 +90,7 @@ public:
   bool isInBox(Box& box, Tucano::Face& face);
 
   Eigen::Vector3f averagePoint(Box& box);
+
   Eigen::Vector3f Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray);
 
   Eigen::Vector3f reflect(Eigen::Vector3f light, Eigen::Vector3f normal);
@@ -99,11 +101,16 @@ public:
 
   vector<Eigen::Vector3f> getNPointsOnCircle(Eigen::Vector3f center, float radius, Eigen::Vector3f normal, int n);
 
-  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+  void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
-  Tucano::Shapes::Box box1;
+  void updating_pixels_KD(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
-  vector<Tucano::Shapes::Box> render_boxes;
+  void divideBox_KD(int max_numberFaces);
+
+  Eigen::Vector3f traceRay_KD(Box& rootBox, int bounce, Ray ray);
+
+  void showBoxes();
+
 
 private:
   // A simple phong shader for rendering meshes
@@ -130,10 +137,11 @@ private:
 
   /// A very thin cylinder to draw a debug ray
   Tucano::Shapes::Cylinder ray = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
+  Tucano::Shapes::Cylinder lightRay = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
 
+  // List of bounding boxes to show:
+  vector<Tucano::Shapes::Box> bounding_boxes;
 
-  //vector<Tucano::Shapes::Box> boxs;
-  
   // Scene meshes
   Tucano::Mesh mesh;
 
@@ -144,8 +152,9 @@ private:
   vector<Box> boxes;
 
   vector<Tucano::Face> triangles;
-
-  vector< Tucano::Shapes::Cylinder> rays;
+public:
+  // Root box
+  Box root_box;
 };
 
 #endif // FLYSCENE
