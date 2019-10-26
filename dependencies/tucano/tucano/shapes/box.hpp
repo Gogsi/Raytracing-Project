@@ -76,7 +76,7 @@ const string box_vertex_code = "\n"
 		"   normal = normalize(vec3(normalMatrix * vec4(in_Normal.xyz,0.0)).xyz);\n"
 		"   vert = modelViewMatrix * in_Position;\n"
         "   gl_Position = projectionMatrix * modelViewMatrix * in_Position;\n"
-        "   color = in_Color;\n"
+        "   color = vec4(in_Color.xyz, 0.5);\n"
         "}\n";
 
 
@@ -128,6 +128,9 @@ public:
 		Eigen::Vector4f viewport = camera.getViewport();
 		glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		box_shader.bind();
 
        	box_shader.setUniform("modelMatrix", model_matrix);
@@ -143,7 +146,7 @@ public:
 		this->unbindBuffers();
 
        	box_shader.unbind();
-
+		
 		#ifdef TUCANODEBUG
 		Misc::errorCheckFunc(__FILE__, __LINE__);
 		#endif
