@@ -111,6 +111,8 @@ public:
 
   void showBoxes();
 
+  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+
 
 private:
   // A simple phong shader for rendering meshes
@@ -152,9 +154,15 @@ private:
   vector<Box> boxes;
 
   vector<Tucano::Face> triangles;
+
+  vector<Tucano::Shapes::Cylinder> rays;
+
+  vector<Tucano::Shapes::Box> ray_hitbox;
+
 public:
   // Root box
   Box root_box;
+
 };
 
 #endif // FLYSCENE

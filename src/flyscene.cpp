@@ -105,22 +105,38 @@ void Flyscene::paintGL(void) {
   phong.render(mesh, flycamera, scene_light);
 
   // render the bounding boxes:
-#ifdef show_flat 
-  for (auto i = 0; i < bounding_boxes.size(); i++)
-  {
-	  bounding_boxes.at(i).render(flycamera, scene_light);
-  }
-#endif // show_flat
+//#ifdef show_flat 
+//  for (auto i = 0; i < bounding_boxes.size(); i++)
+//  {
+//	  bounding_boxes.at(i).render(flycamera, scene_light);
+//  }
+//#endif // show_flat
+//
+//#ifdef show_KD 
+//  for (auto i = 0; i < bounding_boxes.size(); i++)
+//  {
+//	  bounding_boxes.at(i).render(flycamera, scene_light);
+//  }
+//#endif
 
-#ifdef show_KD 
-  for (auto i = 0; i < bounding_boxes.size(); i++)
-  {
-	  bounding_boxes.at(i).render(flycamera, scene_light);
-  }
-#endif
+
+
+
+
 	
   // render the ray and camera representation for ray debug
-  ray.render(flycamera, scene_light);
+
+  for (auto i = 0; i < rays.size(); i++)
+  {
+	  rays.at(i).render(flycamera, scene_light);
+  }
+
+  for (auto i = 0; i < ray_hitbox.size(); i++) {
+	  ray_hitbox.at(i).render(flycamera, scene_light);
+  }
+
+
+  //ray.render(flycamera, scene_light);
   camerarep.render(flycamera, scene_light);
 
   // render ray tracing light sources as yellow spheres
@@ -153,22 +169,85 @@ void Flyscene::simulate(GLFWwindow *window) {
   flycamera.translate(dx, dy, dz);
 }
 
-void Flyscene::createDebugRay(const Eigen::Vector2f &mouse_pos) {
-  ray.resetModelMatrix();
-  // from pixel position to world coordinates
-  Eigen::Vector3f screen_pos = flycamera.screenToWorld(mouse_pos);
+void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
+	rays.clear();
+	ray_hitbox.clear();
 
-  // direction from camera center to click position
-  Eigen::Vector3f dir = (screen_pos - flycamera.getCenter()).normalized();
-  
-  // position and orient the cylinder representing the ray
-  ray.setOriginOrientation(flycamera.getCenter(), dir);
+	//ray.resetModelMatrix();
+	// from pixel position to world coordinates
+	Eigen::Vector3f screen_pos = flycamera.screenToWorld(mouse_pos);
 
-  // place the camera representation (frustum) on current camera location, 
-  camerarep.resetModelMatrix();
-  camerarep.setModelMatrix(flycamera.getViewMatrix().inverse());
+	// direction from camera center to click position
+	Eigen::Vector3f dir = (screen_pos - flycamera.getCenter()).normalized();
 
+	ReflectDebugRay(flycamera.getCenter(), dir, 0);
+
+	// position and orient the cylinder representing the ray
+	//ray.setOriginOrientation(flycamera.getCenter(), dir);
+
+	// place the camera representation (frustum) on current camera location,
+	camerarep.resetModelMatrix();
+	camerarep.setModelMatrix(flycamera.getViewMatrix().inverse());
 }
+
+// Debug Ray
+void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce) {
+
+	Tucano::Shapes::Cylinder ray = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
+	ray.setOriginOrientation(origin, dir);
+
+	int max_bounce = 10;
+
+	if (bounce > max_bounce) {
+		return;
+	}
+
+	Ray r = Ray(origin, dir);
+	Tucano::Face closest_triangle;
+	HitInfo smallestHit;
+	float smallestT = INFINITY;
+
+	for (auto i = 0; i < boxes.size(); i++)
+	{
+		Box curr_box = boxes.at(i);
+		HitInfo result_box = intersectBox(curr_box, origin, dir);
+
+
+		if (result_box.t != INFINITY && result_box.t > 0)
+		{
+			
+			ray_hitbox.push_back(bounding_boxes.at(i));
+
+			HitInfo result_triangle = intersectTriangle(curr_box.triangles, origin, dir);
+			if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
+				smallestT = result_triangle.t;
+				smallestHit = result_triangle;
+				closest_triangle = curr_box.triangles.at(result_triangle.faceId);
+			}
+		}
+	}
+
+	if (smallestT == INFINITY) {
+		ray.setSize(0.005, 10.0);
+		ray.setColor(Eigen::Vector4f(1.0, 0.5, 0.5, 0.0));
+		rays.push_back(ray);
+		return;
+	}
+	else {
+		ray.setSize(0.005, smallestT);
+		ray.setColor(Eigen::Vector4f(1.0, 1.0, 1.0, 0.0));
+		rays.push_back(ray);
+
+		Ray newRay = r.reflectRay(smallestHit.normal, smallestHit.point);
+
+		Eigen::Vector3f origin2 = newRay.getOrigin();
+
+		Eigen::Vector3f dir2 = newRay.getDirection();
+
+		return ReflectDebugRay(origin2, dir2, bounce + 1);
+	}
+}
+
 
 void Flyscene::raytraceScene(int width, int height) {
   std::cout << "ray tracing ..." << std::endl;
