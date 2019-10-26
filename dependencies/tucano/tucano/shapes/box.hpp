@@ -130,6 +130,7 @@ public:
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(false);
 
 		box_shader.bind();
 
@@ -147,6 +148,9 @@ public:
 
        	box_shader.unbind();
 		
+		glDisable(GL_BLEND);
+		glDepthMask(true);
+
 		#ifdef TUCANODEBUG
 		Misc::errorCheckFunc(__FILE__, __LINE__);
 		#endif

@@ -99,6 +99,11 @@ void Flyscene::paintGL(void) {
   scene_light.resetViewMatrix();
   scene_light.viewMatrix()->translate(-lights.back());
 
+
+
+  // render the scene using OpenGL and one light source
+  phong.render(mesh, flycamera, scene_light);
+
   // render the bounding boxes:
 #ifdef show_flat 
   for (auto i = 0; i < bounding_boxes.size(); i++)
@@ -113,11 +118,6 @@ void Flyscene::paintGL(void) {
 	  bounding_boxes.at(i).render(flycamera, scene_light);
   }
 #endif
-
-  // render the scene using OpenGL and one light source
-  phong.render(mesh, flycamera, scene_light);
-
-
 	
   // render the ray and camera representation for ray debug
   ray.render(flycamera, scene_light);
