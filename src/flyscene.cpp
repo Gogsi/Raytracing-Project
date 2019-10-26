@@ -18,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/dodgeColorTest.obj");
+                                    "resources/models/bunny.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -69,18 +69,18 @@ void Flyscene::initialize(int width, int height) {
   this->root_box = Box(mesh);
   
   // KD Trees :
-  divideBox_KD(1000);
+ // divideBox_KD(1000);
 
   // Flat structure:
-  //this->boxes = divideBox(root_box, 1000);
+  this->boxes = divideBox(root_box, 1000);
   
   // if u want to visualize the bounding boxeswith flat structure
-  // #define show_flat
+   #define show_flat
+   showBoxes();
 
   // if u want to visualize the bounding boxes with the KD trees 
   //#define show_KD
-
- // showBoxes();
+  //showBoxes();
 
 }
 
@@ -105,7 +105,7 @@ void Flyscene::paintGL(void) {
   {
 	  bounding_boxes.at(i).render(flycamera, scene_light);
   }
-#endif
+#endif // show_flat
 
 #ifdef show_KD 
   for (auto i = 0; i < bounding_boxes.size(); i++)
