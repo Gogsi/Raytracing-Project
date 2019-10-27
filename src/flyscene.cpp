@@ -18,7 +18,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/twoObjects.obj");
+                                    "resources/models/bunny.obj");
 
 
   // normalize the model (scale to unit cube and center at origin)
@@ -46,7 +46,7 @@ void Flyscene::initialize(int width, int height) {
   camerarep.shapeMatrix()->scale(0.2);
 
   // the debug ray is a cylinder, set the radius and length of the cylinder
-  ray.setSize(0.005, 10.0);
+  //ray.setSize(0.005, 10.0);
 
   // craete a first debug ray pointing at the center of the screen
   createDebugRay(Eigen::Vector2f(width / 2.0, height / 2.0));
@@ -75,8 +75,8 @@ void Flyscene::initialize(int width, int height) {
   this->boxes = divideBox(root_box, 10);
   
   // if u want to visualize the bounding boxeswith flat structure
-   #define show_flat
-   showBoxes();
+  #define show_flat
+  showBoxes();
 
   // if u want to visualize the bounding boxes with the KD trees 
   //#define show_KD
@@ -193,8 +193,9 @@ void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
 // Debug Ray
 void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce) {
 
-	Tucano::Shapes::Cylinder ray = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
-	ray.setOriginOrientation(origin, dir);
+	Tucano::Shapes::Cylinder reflectionRay = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
+
+	reflectionRay.setOriginOrientation(origin, dir);
 
 	int max_bounce = 10;
 
@@ -241,22 +242,35 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 	}
 
 	if (smallestT == INFINITY) {
-		ray.setSize(0.005, 10.0);
-		ray.setColor(Eigen::Vector4f(1.0, 0.5, 0.5, 0.0));
-		rays.push_back(ray);
+		reflectionRay.setSize(0.0025, 10.0);
+		reflectionRay.setColor(Eigen::Vector4f(1.0, 0.5, 0.5, 0.0));
+		rays.push_back(reflectionRay);
+
 		return;
 	}
 	else {
-		ray.setSize(0.005, smallestT);
-		ray.setColor(Eigen::Vector4f(1.0, 1.0, 1.0, 0.0));
-		rays.push_back(ray);
+		reflectionRay.setSize(0.0025, smallestT);
+		reflectionRay.setColor(Eigen::Vector4f(1.0, 1.0, 1.0, 0.0));
+		rays.push_back(reflectionRay);
+
+
+		for (auto i = 0; i < lights.size(); i++)
+		{
+			if (canSeeLight(lights.at(i), smallestHit.point)) {
+				Tucano::Shapes::Cylinder rayToLight = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
+				Vector3f direction = (lights.at(i) - smallestHit.point).normalized();
+
+				rayToLight.setOriginOrientation(smallestHit.point, direction);
+				rayToLight.setColor(Eigen::Vector4f(0.0, 0.0, 0.0, 0.0));
+
+				rayToLight.setSize(0.0025, (lights.at(i) - smallestHit.point).norm());
+				rays.push_back(rayToLight);
+			}
+		}
 
 		Ray newRay = r.reflectRay(smallestHit.normal, smallestHit.point);
-
 		Eigen::Vector3f origin2 = newRay.getOrigin();
-
 		Eigen::Vector3f dir2 = newRay.getDirection();
-
 		return ReflectDebugRay(origin2, dir2, bounce + 1);
 	}
 }
