@@ -110,9 +110,11 @@ public:
 
   Eigen::Vector3f traceRay_KD(Box& rootBox, int bounce, Ray ray);
 
-  void showBoxes();
+  void initBoundingBoxes();
 
   void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+
+  void renderBoundingBoxes();
 
 
 private:

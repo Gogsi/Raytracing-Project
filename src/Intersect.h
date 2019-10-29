@@ -73,17 +73,13 @@ namespace Intersect {
 
 	class BoxObject : public Face {
 	private:
-		Box * box;
+		Box& box;
 
 	public:
 		virtual HitInfo intersects(Ray& ray);
 
-		BoxObject(Box _box) :Face() { // not using the '=' operator bacause it returns a pointer causing memory leaks
-			box = &_box;
-		}
+		BoxObject(Box& _box) :Face(), box(_box) { // not using the '=' operator bacause it returns a pointer causing memory leaks
 
-		~BoxObject() {
-			delete box;
 		}
 	};
 }

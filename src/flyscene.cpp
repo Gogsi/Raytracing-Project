@@ -71,17 +71,18 @@ void Flyscene::initialize(int width, int height) {
   
   // KD Trees :
  // divideBox_KD(1000);
+ //#define show_KD
+
+
 
   // Flat structure:
   this->boxes = divideBox(root_box, 8);
-  
-  // if u want to visualize the bounding boxeswith flat structure
   #define show_flat
-  showBoxes();
+  
+  // if u want to visualize the bounding boxes 
+  //#define show_bounding
 
-  // if u want to visualize the bounding boxes with the KD trees 
-  //#define show_KD
-  //showBoxes();
+  initBoundingBoxes();
 
 }
 
@@ -106,25 +107,9 @@ void Flyscene::paintGL(void) {
   phong.render(mesh, flycamera, scene_light);
 
   // render the bounding boxes:
-//#ifdef show_flat 
-//  for (auto i = 0; i < bounding_boxes.size(); i++)
-//  {
-//	  bounding_boxes.at(i).render(flycamera, scene_light);
-//  }
-//#endif // show_flat
-//
-//#ifdef show_KD 
-//  for (auto i = 0; i < bounding_boxes.size(); i++)
-//  {
-//	  bounding_boxes.at(i).render(flycamera, scene_light);
-//  }
-//#endif
-
-
-
-
-
-	
+#ifdef show_bounding
+  renderBoundingBoxes();	
+#endif
   // render the ray and camera representation for ray debug
 
   for (auto i = 0; i < rays.size(); i++)
@@ -363,8 +348,24 @@ void Flyscene::updating_pixels_KD(vector<vector<Eigen::Vector3f>>& pixel_data, E
 	}
 }
 
+void Flyscene::renderBoundingBoxes() {
+#ifdef show_flat 
+	for (auto i = 0; i < bounding_boxes.size(); i++)
+	{
+		bounding_boxes.at(i).render(flycamera, scene_light);
+	}
+#endif // show_flat
 
-void Flyscene::showBoxes() {
+#ifdef show_KD 
+	for (auto i = 0; i < bounding_boxes.size(); i++)
+	{
+		bounding_boxes.at(i).render(flycamera, scene_light);
+	}
+#endif
+}
+
+
+void Flyscene::initBoundingBoxes() {
 
 	for (auto i = 0; i < boxes.size(); i++)
 	{
