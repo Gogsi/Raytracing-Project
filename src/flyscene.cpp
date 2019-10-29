@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/cube.obj");
+                                    "resources/models/twoObjects.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -77,7 +77,7 @@ void Flyscene::initialize(int width, int height) {
  //#define show_KD
 
   // Flat structure:
-  this->boxes = divideBox(root_box, 8);
+  this->boxes = divideBox(root_box, 100);
   #define show_flat
   
   // if u want to visualize the bounding boxes 
@@ -400,12 +400,12 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	HitInfo smallestHit;
 	float smallestT = INFINITY;
 
-	/*HitInfo temp = sphere->intersects(ray);
+	HitInfo temp = sphere->intersects(ray);
 
 	if (temp.t != INFINITY) {
 
 		return Shader(bounce, sphereFace, temp, ray);
-	}*/
+	}
 
 	/*if (bounce == 0) return Eigen::Vector3f(0.9, 0.9, 0.9);
 	return Eigen::Vector3f(0.0, 0.0, 0.0);*/
@@ -532,8 +532,8 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
 		reflectedColor = traceRay(bounce + 1, reflectedRay);
 
-		Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity());
-		refractedColor = traceRay(bounce + 1, refractedRay);
+		/*Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity());
+		refractedColor = traceRay(bounce + 1, refractedRay);*/
 	}
 
 	if (!canSeeLight(lightPosition, hit.point)) {
