@@ -1,6 +1,7 @@
 #pragma once
 #include <tucano/mesh.hpp>
 
+using namespace Eigen;
 
 // class representation of a ray
 class Ray {

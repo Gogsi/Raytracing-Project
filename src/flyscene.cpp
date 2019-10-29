@@ -98,6 +98,8 @@ void Flyscene::paintGL(void) {
 	glClearColor(0.9, 0.9, 0.9, 0.0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	scene_light.resetViewMatrix();
+	scene_light.viewMatrix()->translate(-lights.back());
 
   // render the scene using OpenGL and one light source
   phong.render(mesh, flycamera, scene_light);
@@ -119,7 +121,7 @@ void Flyscene::paintGL(void) {
 
 
   //ray.render(flycamera, scene_light);
-  camerarep.render(flycamera, scene_light);
+	camerarep.render(flycamera, scene_light);
 
 	// render the ray and camera representation for ray debug
 	ray.render(flycamera, scene_light);
@@ -398,12 +400,12 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	HitInfo smallestHit;
 	float smallestT = INFINITY;
 
-	HitInfo temp = sphere->intersects(ray);
+	/*HitInfo temp = sphere->intersects(ray);
 
 	if (temp.t != INFINITY) {
 
 		return Shader(bounce, sphereFace, temp, ray);
-	}
+	}*/
 
 	/*if (bounce == 0) return Eigen::Vector3f(0.9, 0.9, 0.9);
 	return Eigen::Vector3f(0.0, 0.0, 0.0);*/
