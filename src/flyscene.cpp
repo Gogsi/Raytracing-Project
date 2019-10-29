@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/cube.obj");
+                                    "resources/models/twoObjects.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -77,7 +77,7 @@ void Flyscene::initialize(int width, int height) {
  //#define show_KD
 
   // Flat structure:
-  this->boxes = divideBox(root_box, 8);
+  this->boxes = divideBox(root_box, 10);
   #define show_flat
   
   // if u want to visualize the bounding boxes 
@@ -338,7 +338,7 @@ void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eige
 			// create a ray from the camera passing through the pixel (i,j)
 			Eigen::Vector3f screen_coords = flycamera.screenToWorld(Eigen::Vector2f(i, j));
 			// launch raytracing for the given ray and write result to pixel data
-			pixel_data[i][j] = traceRay(0, Ray(origin, screen_coords - origin));
+			pixel_data[i][j] = traceRay(0, Ray(origin, screen_coords - origin), false);
 		}
 	}
 
@@ -392,7 +392,7 @@ void Flyscene::initBoundingBoxes() {
 	}	
 }
 
-Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
+Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray, bool insideObject) {
 
 #ifndef KD
 	//std::cout << boxes.size() << std::endl;
@@ -434,7 +434,7 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	}*/
 	//std::cout << "Box hit: " << i << std::endl;
 	if (smallestT != INFINITY) {
-		return Shader(bounce, closest_triangle, smallestHit, ray);
+		return Shader(bounce, closest_triangle, smallestHit, ray, insideObject);
 	}
 
 	if(bounce == 0) return Eigen::Vector3f(1.0, 1.0, 1.0);
@@ -482,7 +482,7 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 #endif
 }
 
-Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray) {
+Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray, bool insideObject) {
 
 	//Tucano::Face face = mesh.getFace(hit.faceId);
 	auto mat = materials[face.material_id];
@@ -492,7 +492,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 	for (auto lightPosition : lights)
 	{
-		totalColor += calculateColor(bounce, lightPosition, hit, normalN, ray, mat); // Not sure what the reflection factor is. So any bugs could be caused by this
+		totalColor += calculateColor(bounce, lightPosition, hit, normalN, ray, mat, insideObject); // Not sure what the reflection factor is. So any bugs could be caused by this
 	}
 
 	for (auto spherical : sphericalLights)
@@ -503,7 +503,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 		for (auto lightPosition : points)
 		{
-			totalColor += calculateColor(bounce, lightPosition, hit, normalN, ray, mat) / points.size(); // Not sure what the reflection factor is. So any bugs could be caused by this
+			totalColor += calculateColor(bounce, lightPosition, hit, normalN, ray, mat, insideObject) / points.size(); // Not sure what the reflection factor is. So any bugs could be caused by this
 
 		}
 	}
@@ -511,7 +511,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 	return totalColor;
 }
 
-Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPosition, HitInfo hit, Eigen::Vector3f normalN, Ray ray, Tucano::Material::Mtl mat)
+Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPosition, HitInfo hit, Eigen::Vector3f normalN, Ray ray, Tucano::Material::Mtl mat, bool insideObject)
 {
 	// LIGHT
 	int numLights = lights.size() + sphericalLights.size();
@@ -530,14 +530,22 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 	if (bounce < MAX_BOUNCES) {
 		// calc reflectedRay
 		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
-		reflectedColor = traceRay(bounce + 1, reflectedRay);
+		reflectedColor = traceRay(bounce + 1, reflectedRay, insideObject);
 
-		Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity());
-		refractedColor = traceRay(bounce + 1, refractedRay);
+		if (insideObject)
+		{
+			Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity(), 1.0);
+			refractedColor = traceRay(bounce + 1, refractedRay, !insideObject);
+		}
+		else
+		{
+			Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, 1.0, mat.getOpticalDensity());
+			refractedColor = traceRay(bounce + 1, refractedRay, !insideObject);
+		}
 	}
 
 	if (!canSeeLight(lightPosition, hit.point)) {
-		return (mat.getAmbient().cwiseProduct(lightIntensity) + mat.getSpecular().cwiseProduct(reflectedColor)) + mat.getDissolveFactor() * refractedColor;
+		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1- mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor);
 
 	}
 
@@ -551,7 +559,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 	Eigen::Vector3f color = ambient + diffuse + specular;
 
-	return (color + mat.getSpecular().cwiseProduct(reflectedColor) + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
+	return (color + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 }
 
 bool Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
