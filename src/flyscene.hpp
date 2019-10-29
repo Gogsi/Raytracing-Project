@@ -21,6 +21,7 @@
 #include "hitInfo.h"
 #include "Ray.h"
 #include "box.h"
+#include "Intersect.h"
 
 class Flyscene {
 
@@ -158,6 +159,10 @@ private:
   vector<Tucano::Shapes::Cylinder> rays;
 
   vector<Tucano::Shapes::Box> ray_hitbox;
+
+  Intersect::Face* sphere;
+
+  Tucano::Face sphereFace;
 
 public:
   // Root box
