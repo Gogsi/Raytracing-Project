@@ -5,8 +5,9 @@
 #include "flyscene.hpp"
 #include <iostream>
 
-#define WINDOW_WIDTH 1000
-#define WINDOW_HEIGHT 1000
+#define WINDOW_WIDTH 200
+#define WINDOW_HEIGHT 200
+
 
 Flyscene *flyscene;
 Eigen::Vector2f mouse_pos = Eigen::Vector2f::Zero();
@@ -66,6 +67,8 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action,
     flyscene->addLight();
   else if (key == GLFW_KEY_T && action == GLFW_PRESS)
     flyscene->raytraceScene();
+  else if (key == GLFW_KEY_O && action == GLFW_PRESS)
+	  flyscene->addSphericalLight();
 }
 
 static void mouseButtonCallback(GLFWwindow *window, int button, int action,

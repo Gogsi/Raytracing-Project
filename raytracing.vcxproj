@@ -87,13 +87,16 @@ xcopy "$(SolutionDir)dependencies\glew\bin\win\x64" "$(OutputPath)" /y /i</Comma
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\flyscene.cpp" />
+    <ClCompile Include="src\Intersect.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\box.h" />
     <ClInclude Include="src\hitInfo.h" />
     <ClInclude Include="src\flyscene.hpp" />
+    <ClInclude Include="src\Intersect.h" />
     <ClInclude Include="src\Ray.h" />
+    <ClInclude Include="src\ShaderLib.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
