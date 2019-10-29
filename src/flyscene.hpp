@@ -112,7 +112,7 @@ public:
 
   void showBoxes();
 
-  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce, int jump);
 
 
 private:
@@ -163,6 +163,8 @@ private:
   Intersect::Face* sphere;
 
   Tucano::Face sphereFace;
+
+  int jumps;
 
 public:
   // Root box
