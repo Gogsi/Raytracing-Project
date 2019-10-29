@@ -72,7 +72,7 @@ void Flyscene::initialize(int width, int height) {
  // divideBox_KD(1000);
 
   // Flat structure:
-  this->boxes = divideBox(root_box, 10);
+  this->boxes = divideBox(root_box, 1000);
   
   // if u want to visualize the bounding boxeswith flat structure
   #define show_flat
