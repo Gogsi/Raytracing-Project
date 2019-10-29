@@ -1,9 +1,11 @@
 #pragma once
 #include <tucano/mesh.hpp>
 #include <vector>
+
 using namespace std;
 
 class Box {
+
 public:
 	Eigen::Vector3f tmax, tmin;
 
@@ -80,4 +82,15 @@ public:
 		tmax = mesh.getShapeModelMatrix() * Eigen::Vector3f(tx_max, ty_max, tz_max);
 		tmin = mesh.getShapeModelMatrix() * Eigen::Vector3f(tx_min, ty_min, tz_min);
 	};
+
+	bool isInBox(Vector3f origin) {
+		bool x = (origin.x() >= tmin.x() && origin.x() <= tmax.x());
+		bool y = (origin.y() >= tmin.y() && origin.y() <= tmax.y());
+		bool z = (origin.z() >= tmin.z() && origin.z() <= tmax.z());
+
+		return (x && y && z);
+	}
+
+
+
 };

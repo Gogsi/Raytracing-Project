@@ -24,7 +24,7 @@ public:
 	}
 
 	// returns: origin + t * dir
-	Eigen::Vector3f getPointOnRay(int t) {
+	Vector3f getPointOnRay(float t) {
 		return origin + t * dir;
 	}
 
