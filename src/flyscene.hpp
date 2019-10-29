@@ -104,9 +104,11 @@ public:
 
   Eigen::Vector3f calculateColor(int bounce, Eigen::Vector3f lightPosition, HitInfo hit, Eigen::Vector3f normalN, Ray ray, Tucano::Material::Mtl mat);
 
-  void showBoxes();
+  void initBoundingBoxes();
 
   void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+
+  void renderBoundingBoxes();
 
 
 private:

@@ -65,7 +65,7 @@ namespace Intersect {
 
 	HitInfo BoxObject::intersects(Ray& ray) {
 
-		Box _box = *box;
+		Box _box = box;
 
 		Eigen::Vector3f dir = ray.getDirection();
 		Eigen::Vector3f origin = ray.getOrigin();
@@ -118,9 +118,6 @@ namespace Intersect {
 		if (tzmax < tmax) {
 			tmax = tzmax;
 		}
-
-
-		//delete& _box;
 
 		return HitInfo{ tmin, -1 };
 	}
