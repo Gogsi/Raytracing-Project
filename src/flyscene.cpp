@@ -400,12 +400,14 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	HitInfo smallestHit;
 	float smallestT = INFINITY;
 
-	HitInfo temp = sphere->intersects(ray);
+	smallestHit = sphere->intersects(ray);
+	smallestT = smallestHit.t;
+	closest_triangle = sphereFace;
 
-	if (temp.t != INFINITY) {
+	/*if (sphereHit.t != INFINITY) {
 
-		return Shader(bounce, sphereFace, temp, ray);
-	}
+		return Shader(bounce, sphereFace, sphereHit, ray);
+	}*/
 
 	/*if (bounce == 0) return Eigen::Vector3f(0.9, 0.9, 0.9);
 	return Eigen::Vector3f(0.0, 0.0, 0.0);*/
@@ -426,13 +428,6 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 		}
 	}
 
-	/*HitInfo result_triangle = intersectTriangle(curr_box.triangles, ray.getOrigin(), ray.getDirection());
-	if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
-		smallestT = result_triangle.t;
-		smallestHit = result_triangle;
-		closest_triangle = triangles.at(result_triangle.faceId);
-	}*/
-	//std::cout << "Box hit: " << i << std::endl;
 	if (smallestT != INFINITY) {
 		return Shader(bounce, closest_triangle, smallestHit, ray);
 	}
