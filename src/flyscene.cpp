@@ -3,7 +3,7 @@
 #include <queue>
 #include <thread>
 #include <ctime>
-#include "Intersect.h"
+
 
 using namespace std;
 
@@ -194,6 +194,21 @@ void Flyscene::raytraceScene(int width, int height) {
 void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id) {
 	// for every pixel shoot a ray from the origin through the pixel coords
 	//std::cout << "using no acceleration structure" << std::endl;
+
+	sphere = new Intersect::Sphere(mesh.getShapeModelMatrix() * mesh.getCentroid(), lightrep.getBoundingSphereRadius() / 3.0f );
+	Tucano::Material::Mtl sphereMat = Tucano::Material::Mtl();
+	sphereMat.setAmbient(Eigen::Vector3f(0, 0, 0));
+	sphereMat.setDiffuse(Eigen::Vector3f(0.8f, 0.002401f, 0));
+	sphereMat.setSpecular(Eigen::Vector3f(0.5f, 0.5f, 0.5f));
+	sphereMat.setIlluminationModel(2);
+	sphereMat.setShininess(10);
+
+	int mat_id = materials.size();
+	materials.push_back(sphereMat);
+
+	sphereFace = Tucano::Face();
+	sphereFace.material_id = mat_id;
+
 	for (int j = thread_id; j < image_size[1]; j += number_threads) {
 		for (int i = 0; i < image_size[0]; i++) {
 			// create a ray from the camera passing through the pixel (i,j)
@@ -222,6 +237,17 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	Tucano::Face closest_triangle;
 	HitInfo smallestHit;
 	float smallestT = INFINITY;
+
+	HitInfo temp = sphere->intersects(ray);
+
+	if (temp.t != INFINITY) {
+
+		return Shader(bounce, sphereFace, temp, ray);
+	}
+
+	/*if (bounce == 0) return Eigen::Vector3f(0.9, 0.9, 0.9);
+	return Eigen::Vector3f(0.0, 0.0, 0.0);*/
+
 	for (auto i = 0; i < boxes.size(); i++)
 	{
 		Box curr_box = boxes.at(i);
@@ -297,7 +323,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 		Eigen::Vector3f color = ambient + diffuse + specular;
 
-		totalColor += color + mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
+		totalColor += color +mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 	}
 	
 	return totalColor;
@@ -425,10 +451,9 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 			smallestInfo.normal = newInfo.normal;
 			smallestInfo.point = newInfo.point;
 		}
-		delete triangle;
-
-		/*
-		float D = normalizeNormal.dot(v0);
+		delete( triangle);
+		
+		/*float D = normalizeNormal.dot(v0);
 
 		float denom = normalizeNormal.dot(dir);
 
@@ -445,12 +470,37 @@ HitInfo Flyscene::intersectTriangle(vector<Tucano::Face>& faces, Eigen::Vector3f
 					smallestHitPoint = hitPoint;
 				}
 			}
-		}
-		*/
+		}*/
+		
 	}
 
 	return smallestInfo;//HitInfo { smallestT, smallestFace, smallestNormal, smallestHitPoint };
 }
+
+//
+//bool Flyscene::isInTriangle(Eigen::Vector3f& hit, Eigen::Vector3f& v0, Eigen::Vector3f& v1, Eigen::Vector3f& v2)
+//{
+//	Eigen::Vector3f u = v1 - v0;
+//	Eigen::Vector3f v = v2 - v0;
+//	Eigen::Vector3f w = hit - v0;
+//
+//	float uDotU = u.dot(u);
+//	float uDotV = u.dot(v);
+//	float vDotV = v.dot(v);
+//
+//	float wDotU = w.dot(u);
+//	float wDotV = w.dot(v);
+//
+//	float denom = uDotU * vDotV - uDotV * uDotV;
+//	float s1 = vDotV * wDotU - uDotV * wDotV;
+//	float t1 = uDotU * wDotV - uDotV * wDotU;
+//
+//	float s = s1 / denom;
+//	float t = t1 / denom;
+//
+//	if (s < 0 || t < 0 || s + t > 1) return false;
+//	return true;
+//}
 
 HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f origin, Eigen::Vector3f dest) {
 
@@ -507,13 +557,15 @@ HitInfo Flyscene::intersectBox(Box& box, Eigen::Vector3f origin, Eigen::Vector3f
 
 	return HitInfo{ tmin, -1 };*/
 
+	
+
 	Intersect::Face * boxie = new Intersect::BoxObject(box);
 
 	Ray ray = Ray(origin, dest);
 
 	HitInfo res = boxie->intersects(ray);
 
-	delete boxie;
+	delete( boxie);
 
 	return res;
 }

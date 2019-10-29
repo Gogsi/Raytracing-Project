@@ -1,5 +1,9 @@
 #pragma once
-#include "flyscene.hpp"
+#include <tucano/mesh.hpp>
+#include <vector>
+#include "Ray.h";
+#include "hitInfo.h"
+#include "box.h"
 
 namespace Intersect {
 
@@ -18,7 +22,18 @@ namespace Intersect {
 				vertices.push_back(_vertices[i]);
 			}*/
 			normal = _normal;
+			
 		}
+		Face() {
+			vertices = std::vector<Eigen::Vector3f>{};
+			normal = Eigen::Vector3f(0, 0, 0);
+		}
+		Face(Eigen::Vector3f center) {
+			vertices = std::vector<Eigen::Vector3f>{center};
+			normal = Eigen::Vector3f(0, 0, 0);
+		}
+
+		~Face(){}
 	};
 
 	class Triangle : public Face {
@@ -41,19 +56,34 @@ namespace Intersect {
 		}
 	};
 
-	class Sphere : Face {
+	class Sphere : public Face {
+	private:
+		float radius;
 	public:
-		HitInfo intersects(Ray& ray);
+		virtual HitInfo intersects(Ray& ray);
+
+		Sphere(Eigen::Vector3f center, float _radius) : Face(center) {
+			radius = _radius;
+		}
+		bool solveQuadratic(float& a,  float& b,  float& c, float& x0, float& x1);
+		bool doesIntersect(Ray& ray);
+
+		
 	};
 
 	class BoxObject : public Face {
 	private:
-		Box box;
+		Box * box;
+
 	public:
 		virtual HitInfo intersects(Ray& ray);
 
-		BoxObject(Box _box) :Face(vertices, normal) {
-			box = _box;
+		BoxObject(Box _box) :Face() { // not using the '=' operator bacause it returns a pointer causing memory leaks
+			box = &_box;
+		}
+
+		~BoxObject() {
+			delete box;
 		}
 	};
 }

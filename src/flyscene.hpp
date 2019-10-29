@@ -17,9 +17,11 @@
 #include <tucano/utils/objimporter.hpp>
 #include <thread> 
 
+#include "Intersect.h"
 #include "hitInfo.h"
 #include "Ray.h"
 #include "box.h"
+
 
 class Flyscene {
 
@@ -145,6 +147,10 @@ private:
   vector<Box> boxes;
 
   vector<Tucano::Face> triangles;
+
+  Intersect::Face* sphere;
+
+  Tucano::Face sphereFace;
 public:
   // Root box
   Box root_box;
