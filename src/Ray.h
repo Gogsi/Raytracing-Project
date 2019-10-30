@@ -40,4 +40,17 @@ public:
 		Eigen::Vector3f t = (firstIndex / secondIndex) * (viewDirection - dot * normal) - normal * root;
 		return Ray(point, t);
 	}
+	std::vector<Ray> resendRay(Eigen::Vector3f normal, Eigen::Vector3f point, int n) {
+		std::vector<Ray> res;
+		float theta = M_PI * 2 / n;
+		Eigen::AngleAxisf rotation = Eigen::AngleAxisf(theta, normal);
+
+		for (size_t i = 0; i < n; i++)
+		{
+			Eigen::Vector3f newDirection = rotation * reflectRay(normal, point).getDirection();
+
+			res.push_back(Ray(point, newDirection));
+		}
+		return res;
+	}
 };

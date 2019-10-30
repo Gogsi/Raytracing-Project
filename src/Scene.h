@@ -1,10 +1,14 @@
 #pragma once
+#include <tucano/effects/phongmaterialshader.hpp>
 #include <tucano/mesh.hpp>
+
 #include <vector>
 #include "Ray.h";
 #include "hitInfo.h"
 #include "box.h"
 #include "Intersect.h"
+
+#define RADIUS_CORRECTION 3.0f
 
 struct ModelFace {
 	Tucano::Face face;
@@ -15,7 +19,7 @@ class Scene {
 private :
 	// list of faces (in world space)
 	std::vector<ModelFace> sceneFaces;
-	std::vector<Intersect::Sphere> spheres;
+	std::vector<Intersect::Face *> spheres;
 	std::vector<Tucano::Mesh> meshes;
 
 public:
@@ -28,12 +32,22 @@ public:
 		return meshes[index];
 	}
 
-	void addSphere(Eigen::Vector3f center, float radius) {
-		spheres.push_back( Intersect::Sphere(center, radius));
+	// Material is currently hardcoded for color
+	Tucano::Material::Mtl addSphere(Eigen::Vector3f center, float radius, Eigen::Vector3f color) {
+		spheres.push_back( new Intersect::Sphere(center, radius / RADIUS_CORRECTION));
+
+		Tucano::Material::Mtl sphereMat = Tucano::Material::Mtl();
+		sphereMat.setAmbient(Eigen::Vector3f(0, 0, 0));
+		sphereMat.setDiffuse(color);
+		sphereMat.setSpecular(Eigen::Vector3f(0.8f, 0.8f, 0.8f));
+		sphereMat.setIlluminationModel(2);
+		sphereMat.setShininess(10);
+
+		return sphereMat;
 	}
 
-	Intersect::Sphere getSphere(int index) {
-		return spheres[index];
+	Intersect::Face& getSphere(int index) {
+		return *spheres[index];
 	}
 
 	int getNumberOfSpheres() {
