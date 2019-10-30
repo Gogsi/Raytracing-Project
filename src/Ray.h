@@ -45,11 +45,13 @@ public:
 		float theta = M_PI * 2 / n;
 		Eigen::AngleAxisf rotation = Eigen::AngleAxisf(theta, normal);
 
+		Eigen::Vector3f direction = reflectRay(normal, point).getDirection();
+
 		for (size_t i = 0; i < n; i++)
 		{
-			Eigen::Vector3f newDirection = rotation * reflectRay(normal, point).getDirection();
+			direction = rotation * direction;
 
-			res.push_back(Ray(point, newDirection));
+			res.push_back(Ray(point, direction));
 		}
 		return res;
 	}
