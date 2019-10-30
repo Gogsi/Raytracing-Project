@@ -42,6 +42,8 @@ public:
 		sphereMat.setSpecular(Eigen::Vector3f(0.8f, 0.8f, 0.8f));
 		sphereMat.setIlluminationModel(2);
 		sphereMat.setShininess(10);
+		sphereMat.setDissolveFactor(0);
+		sphereMat.setOpticalDensity(1);
 
 		return sphereMat;
 	}

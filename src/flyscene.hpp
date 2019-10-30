@@ -1,6 +1,8 @@
 #ifndef __FLYSCENE__
 #define __FLYSCENE__
 
+#define SCALE 0.5f
+
 // Must be included before glfw.
 #include <GL/glew.h>
 
@@ -111,6 +113,8 @@ public:
 
   void renderBoundingBoxes();
 
+  Eigen::Vector4f trace_global_illum(Ray& ray);
+
 
 private:
   // A simple phong shader for rendering meshes
@@ -161,6 +165,25 @@ private:
   Tucano::Face sphereFace;
 
   Scene currentScene = Scene();
+
+  Tucano::Shapes::Sphere sphere1;
+
+  std::vector<Eigen::Vector4f> spherePositions{
+		Eigen::Vector4f(-0.5f, 0.25f, 0.25f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.75f, 0.25f, -0.1f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.0f, 0.33f, -0.5f, 1.0f) * SCALE,
+		Eigen::Vector4f(-0.75f, 0.33f, -0.2f, 1.0f) * SCALE,
+		Eigen::Vector4f(0.6f, 0.167f, 0.4f, 0.5f) * SCALE
+  };
+  std::vector<Eigen::Vector3f> sphereColors{
+	  Eigen::Vector3f(0.8f, 0.2401f, 0.0f), // red sphere
+	  Eigen::Vector3f(0.5f, 0.5f, 0), // green sphere
+	  Eigen::Vector3f(0.98824, 0.72941, 0.01176), // orange sphere
+	  Eigen::Vector3f(0.0f, 0.5f, 0.5f), // blue sphere
+	  Eigen::Vector3f(1.0f, 0.0f, 1.0f) // pink sphere
+  };
+
+  std::vector<Tucano::Shapes::Sphere> previewSpheres;
 
 public:
   // Root box
