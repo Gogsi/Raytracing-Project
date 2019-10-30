@@ -133,21 +133,23 @@ namespace Intersect {
 		float a = ray.getDirection().dot(ray.getDirection());
 		float b = 2 * ray.getDirection().dot(L);
 		float c = L.dot(L) - radius2;
-		if (!solveQuadratic(a, b, c, t0, t1)) return res;
-		if (t0 > t1) std::swap(t0, t1);
+		if (solveQuadratic(a, b, c, t0, t1)) {
+			if (t0 > t1) std::swap(t0, t1);
 
-		if (t0 < 0) {
-			t0 = t1; // if t0 is negative, let's use t1 instead 
-			if (t0 < 0) return res; // both t0 and t1 are negative 
+			if (t0 < 0) {
+				t0 = t1; // if t0 is negative, let's use t1 instead 
+			}
+
+			if (t0 > 0 && t0 >= precision) {
+
+				float t = t0;
+
+				res.t = t0;
+				res.faceId = -1;
+				res.point = ray.getPointOnRay(t);
+				res.normal = (res.point - vertices[0]).normalized();
+			}
 		}
-
-		float t = t0;
-
-		res.t = t0;
-		res.faceId = -1;
-		res.point = ray.getPointOnRay(t);
-		res.normal = (res.point - vertices[0]).normalized();
-
 		return res;
 	}
 

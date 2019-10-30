@@ -12,6 +12,7 @@ namespace Intersect {
 		std::vector<Eigen::Vector3f> vertices;
 		Eigen::Vector3f normal;
 		const float precision = 0.001f;
+		int material_id;
 	public:
 		virtual HitInfo intersects(Ray& ray) = 0;
 
@@ -31,6 +32,12 @@ namespace Intersect {
 		Face(Eigen::Vector3f center) {
 			vertices = std::vector<Eigen::Vector3f>{center};
 			normal = Eigen::Vector3f(0, 0, 0);
+		}
+		void setMaterialID(int index) {
+			material_id = index;
+		}
+		int getMaterialID() {
+			return material_id;
 		}
 
 		~Face(){}

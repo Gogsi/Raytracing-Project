@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/twoObjects.obj");
+                                    "resources/models/planeobj.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -42,7 +42,7 @@ void Flyscene::initialize(int width, int height) {
 
 	// create a first ray-tracing light source at some random position
 	lights.push_back(Eigen::Vector3f(-1.0, 1.0, 1.0));
-	//sphericalLights.push_back(make_pair(Eigen::Vector3f(-1.0, 1.0, 1.0), 0.03));
+	//sphericalLights.push_back(make_pair(Eigen::Vector3f(-1.0, 1.0, 1.0), 0.1));
 
 	// scale the camera representation (frustum) for the ray debug
 	camerarep.shapeMatrix()->scale(0.2);
@@ -100,6 +100,7 @@ void Flyscene::paintGL(void) {
 
 	scene_light.resetViewMatrix();
 	scene_light.viewMatrix()->translate(-lights.back());
+	//scene_light.viewMatrix()->translate(-sphericalLights.back().first);
 
   // render the scene using OpenGL and one light source
   phong.render(mesh, flycamera, scene_light);
@@ -316,22 +317,37 @@ void Flyscene::raytraceScene(int width, int height) {
   std::cout << "ray tracing done! " << std::endl;}
 
 void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id) {
-	// for every pixel shoot a ray from the origin through the pixel coords
-	//std::cout << "using no acceleration structure" << std::endl;
-
-	sphere = new Intersect::Sphere(mesh.getShapeModelMatrix() * mesh.getCentroid(), lightrep.getBoundingSphereRadius() / 3.0f );
-	Tucano::Material::Mtl sphereMat = Tucano::Material::Mtl();
-	sphereMat.setAmbient(Eigen::Vector3f(0, 0, 0));
-	sphereMat.setDiffuse(Eigen::Vector3f(0.8f, 0.002401f, 0));
-	sphereMat.setSpecular(Eigen::Vector3f(0.5f, 0.5f, 0.5f));
-	sphereMat.setIlluminationModel(2);
-	sphereMat.setShininess(10);
-
-	int mat_id = materials.size();
-	materials.push_back(sphereMat);
 
 	sphereFace = Tucano::Face();
-	sphereFace.material_id = mat_id;
+#define SCALE 0.5f
+
+	std::vector<Eigen::Vector4f> spherePositions{
+		Eigen::Vector4f(-0.5f, 0.25f, 0.25f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.75f, 0.25f, -0.1f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.0f, 0.33f, -0.5f, 1.0f) * SCALE,
+		Eigen::Vector4f(-0.75f, 0.33f, -0.2f, 1.0f) * SCALE,
+		Eigen::Vector4f(0.6f, 0.167f, 0.4f, 0.5f) * SCALE
+	};
+	std::vector<Eigen::Vector3f> sphereColors{
+		Eigen::Vector3f(0.8f, 0.2401f, 0.0f), // red sphere
+		Eigen::Vector3f(0.5f, 0.5f, 0), // green sphere
+		Eigen::Vector3f(0.98824, 0.72941, 0.01176), // orange sphere
+		Eigen::Vector3f(0.0f, 0.5f, 0.5f), // blue sphere
+		Eigen::Vector3f(1.0f, 0.0f, 1.0f) // pink sphere
+	};
+
+	// HAS TO BE SAME SIZE
+	if (spherePositions.size() != sphereColors.size()) {
+		abort();
+	}
+
+	for (size_t i = 0; i < spherePositions.size(); i++)
+	{
+		auto tempMat = currentScene.addSphere(spherePositions[i].head<3>(), spherePositions[i].w(), sphereColors[i]);
+		int mat_id = materials.size();
+		materials.push_back(tempMat);
+		currentScene.getSphere(i).setMaterialID(mat_id);
+	}
 
 	for (int j = thread_id; j < image_size[1]; j += number_threads) {
 		for (int i = 0; i < image_size[0]; i++) {
@@ -341,7 +357,6 @@ void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eige
 			pixel_data[i][j] = traceRay(0, Ray(origin, screen_coords - origin));
 		}
 	}
-
 }
 
 void Flyscene::renderBoundingBoxes() {
@@ -400,17 +415,16 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	HitInfo smallestHit;
 	float smallestT = INFINITY;
 
-	smallestHit = sphere->intersects(ray);
-	smallestT = smallestHit.t;
-	closest_triangle = sphereFace;
-
-	/*if (sphereHit.t != INFINITY) {
-
-		return Shader(bounce, sphereFace, sphereHit, ray);
-	}*/
-
-	/*if (bounce == 0) return Eigen::Vector3f(0.9, 0.9, 0.9);
-	return Eigen::Vector3f(0.0, 0.0, 0.0);*/
+	for (size_t i = 0; i < currentScene.getNumberOfSpheres(); i++)
+	{
+		HitInfo resultSphere = currentScene.getSphere(i).intersects(ray);
+		if (resultSphere.t != INFINITY && resultSphere.t < smallestT) {
+			smallestT = resultSphere.t;
+			smallestHit = resultSphere;
+			closest_triangle = sphereFace;
+			closest_triangle.material_id = currentScene.getSphere(i).getMaterialID();
+		}
+	}
 
 	for (auto i = 0; i < boxes.size(); i++)
 	{
@@ -432,7 +446,7 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 		return Shader(bounce, closest_triangle, smallestHit, ray);
 	}
 
-	if(bounce == 0) return Eigen::Vector3f(1.0, 1.0, 1.0);
+	if (bounce == 0) return Eigen::Vector3f(1.0, 1.0, 1.0);
 	return Eigen::Vector3f(0.0, 0.0, 0.0);
 #else
 	Tucano::Face closest_triangle;
@@ -493,7 +507,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 	for (auto spherical : sphericalLights)
 	{
 		Eigen::Vector3f normal = hit.point - spherical.first;
-		vector<Eigen::Vector3f> points = Shader::getNPointsOnCircle(spherical.first, spherical.second, normal.normalized(), 4);
+		vector<Eigen::Vector3f> points = Shader::getNPointsOnCircle(spherical.first, spherical.second, normal.normalized(), 5);
 		points.push_back(spherical.first);
 
 		for (auto lightPosition : points)
@@ -520,23 +534,39 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 	Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
 	Eigen::Vector3f refractedColor = Eigen::Vector3f(0, 0, 0);
+	Eigen::Vector3f globalIllum = Eigen::Vector3f(0, 0, 0);
 
+#define GLOBAL_RESOLUTION 4
 
 	if (bounce < MAX_BOUNCES) {
 		// calc reflectedRay
 		Ray reflectedRay = ray.reflectRay(hit.normal, hit.point);
 		reflectedColor = traceRay(bounce + 1, reflectedRay);
 
-		/*Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity());
-		refractedColor = traceRay(bounce + 1, refractedRay);*/
+		Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity());
+		refractedColor = traceRay(bounce + 1, refractedRay);
+
+		/*std::vector<Ray> illum_rays = ray.resendRay(hit.normal, hit.point, GLOBAL_RESOLUTION);
+		std::vector<Eigen::Vector3f> global_colors;
+
+		for (size_t i = 0; i < illum_rays.size(); i++)
+		{
+			global_colors.push_back(traceRay(bounce + 1, illum_rays[i]));
+		}
+
+		for (size_t i = 0; i < global_colors.size(); i++)
+		{
+			globalIllum += global_colors[i];
+		}
+		globalIllum /= GLOBAL_RESOLUTION;*/
 	}
+
+
 
 	if (!canSeeLight(lightPosition, hit.point)) {
-		return (mat.getAmbient().cwiseProduct(lightIntensity) + mat.getSpecular().cwiseProduct(reflectedColor)) + mat.getDissolveFactor() * refractedColor;
+		return (mat.getAmbient().cwiseProduct(lightIntensity)) +mat.getSpecular().cwiseProduct(reflectedColor)) + mat.getDissolveFactor() * refractedColor;
 
 	}
-
-
 
 	Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
 
@@ -546,26 +576,37 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 	Eigen::Vector3f color = ambient + diffuse + specular;
 
-	return (color + mat.getSpecular().cwiseProduct(reflectedColor) + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
+	return color  +mat.getSpecular().cwiseProduct(reflectedColor) + mat.getDissolveFactor() * refractedColor; // Not sure what the reflection factor is. So any bugs could be caused by this
 }
 
 bool Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
 {
 	Eigen::Vector3f toLight = lightPos - position;
-	HitInfo hit = intersectTriangle(triangles, position, toLight);
+	Ray ray = Ray(position, toLight.normalized());
+	HitInfo sphereHit;
 	float toLightLength = toLight.norm();
 	bool behind = false;
-
-	if (hit.t != INFINITY)
+	bool sphereBlock = false;
+	
+	for (size_t i = 0; i < currentScene.getNumberOfSpheres(); i++)
 	{
-
-		if (hit.t > toLightLength)
-		{
+		sphereHit = currentScene.getSphere(i).intersects(ray);
+		if (sphereHit.t != INFINITY && sphereHit.t > toLightLength) {
 			behind = true;
 		}
-
+		else if (sphereHit.t != INFINITY){
+			sphereBlock = true;
+		}
 	}
-	return (hit.t == INFINITY || behind == true);
+
+	HitInfo trianglHit = intersectTriangle(triangles, position, toLight);
+
+	if (trianglHit.t != INFINITY && trianglHit.t > toLightLength)
+	{
+		//eventualHit = trianglHit;
+		behind = true;
+	}
+	return ((!sphereBlock && trianglHit.t == INFINITY) || behind == true);
 }
 
 HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir) {
