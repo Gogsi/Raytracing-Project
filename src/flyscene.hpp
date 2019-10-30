@@ -168,6 +168,10 @@ private:
   bool renderBox;
 
   bool renderAllBox;
+
+  vector<Tucano::Shapes::Cylinder> light_rays;
+
+  bool renderRayLights;
 public:
   // Root box
   Box root_box;

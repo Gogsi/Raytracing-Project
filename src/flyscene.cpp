@@ -36,6 +36,7 @@ void Flyscene::initialize(int width, int height) {
 
 	renderBox = true;
 	renderAllBox = false;
+	renderRayLights = false;
 
 	// set the color and size of the sphere to represent the light sources
 	// same sphere is used for all sources
@@ -124,6 +125,14 @@ void Flyscene::paintGL(void) {
 		rays.at(i).render(flycamera, scene_light);
 	}
 
+	if (renderRayLights) {
+		for (auto i = 0; i < light_rays.size(); i++)
+		{
+			light_rays.at(i).render(flycamera, scene_light);
+		}
+	}
+
+
 	if (renderBox) {
 		for (auto i = 0; i < ray_hitbox.size(); i++) {
 
@@ -194,6 +203,9 @@ void Flyscene::simulate(GLFWwindow* window) {
 	static int old_stateU = GLFW_RELEASE;
 	int new_stateU = glfwGetKey(window, GLFW_KEY_U);
 
+	static int old_stateB = GLFW_RELEASE;
+	int new_stateB = glfwGetKey(window, GLFW_KEY_B);
+
 	if (new_stateM == GLFW_RELEASE && old_stateM == GLFW_PRESS) {
 		jumps++;
 		std::cout << "total reflections: " << jumps << std::endl;
@@ -230,6 +242,16 @@ void Flyscene::simulate(GLFWwindow* window) {
 
 	old_stateU = new_stateU;
 
+	if (new_stateB == GLFW_RELEASE && old_stateB == GLFW_PRESS) {
+		if (renderRayLights) {
+			renderRayLights = false;
+		}
+		else {
+			renderRayLights = true;
+		}
+	}
+
+	old_stateB = new_stateB;
 
 
 
@@ -238,6 +260,7 @@ void Flyscene::simulate(GLFWwindow* window) {
 void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
 	rays.clear();
 	ray_hitbox.clear();
+	light_rays.clear();
 
 	//ray.resetModelMatrix();
 	// from pixel position to world coordinates
@@ -328,7 +351,7 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 				rayToLight.setColor(Eigen::Vector4f(0.0, 0.0, 0.0, 0.0));
 
 				rayToLight.setSize(0.0025, (lights.at(i) - smallestHit.point).norm());
-				rays.push_back(rayToLight);
+				light_rays.push_back(rayToLight);;
 			}
 		}
 
