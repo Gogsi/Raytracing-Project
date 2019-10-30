@@ -257,12 +257,6 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 
 	reflectionRay.setOriginOrientation(origin, dir);
 
-	int max_bounce = 10;
-
-	if (jumps < 0) {
-		return
-	}
-
 	if (bounce > jumps) {
 		return;
 	}
