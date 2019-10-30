@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
   // load the OBJ file and materials
   Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/twoObjects.obj");
+                                    "resources/models/test.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -77,7 +77,7 @@ void Flyscene::initialize(int width, int height) {
  //#define show_KD
 
   // Flat structure:
-  this->boxes = divideBox(root_box, 10);
+  this->boxes = divideBox(root_box, 12);
   #define show_flat
   
   // if u want to visualize the bounding boxes 
@@ -400,11 +400,13 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray, bool insideObject) {
 	HitInfo smallestHit;
 	float smallestT = INFINITY;
 
-	/*HitInfo temp = sphere->intersects(ray);
+	//smallestHit = sphere->intersects(ray);
+	//smallestT = smallestHit.t;
+	//closest_triangle = sphereFace;
 
-	if (temp.t != INFINITY) {
+	/*if (sphereHit.t != INFINITY) {
 
-		return Shader(bounce, sphereFace, temp, ray);
+		return Shader(bounce, sphereFace, sphereHit, ray);
 	}*/
 
 	/*if (bounce == 0) return Eigen::Vector3f(0.9, 0.9, 0.9);
@@ -426,13 +428,6 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray, bool insideObject) {
 		}
 	}
 
-	/*HitInfo result_triangle = intersectTriangle(curr_box.triangles, ray.getOrigin(), ray.getDirection());
-	if (result_triangle.t != INFINITY && smallestT > result_triangle.t) {
-		smallestT = result_triangle.t;
-		smallestHit = result_triangle;
-		closest_triangle = triangles.at(result_triangle.faceId);
-	}*/
-	//std::cout << "Box hit: " << i << std::endl;
 	if (smallestT != INFINITY) {
 		return Shader(bounce, closest_triangle, smallestHit, ray, insideObject);
 	}
@@ -541,6 +536,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 		{
 			Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, 1.0, mat.getOpticalDensity());
 			refractedColor = traceRay(bounce + 1, refractedRay, !insideObject);
+
 		}
 	}
 
