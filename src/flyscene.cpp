@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
 	// load the OBJ file and materials
 	Tucano::MeshImporter::loadObjFile(mesh, materials,
-		"resources/models/toy.obj");
+		"resources/models/test.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -74,7 +74,7 @@ void Flyscene::initialize(int width, int height) {
 	// create the array of boxes
 	this->root_box = Box(mesh);
 
-	int facePerCube = sqrt(mesh.getNumberOfFaces() + 100);
+	int facePerCube = 12; //sqrt(mesh.getNumberOfFaces() + 100);
 
 	// KD Trees :
     divideBox_KD(facePerCube);
@@ -655,7 +655,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 		Eigen::Vector3f colorS = ambientS + diffuseS + specularS;
 
-		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor) + color * result.second.getDissolveFactor();
+		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor) + colorS * result.second.getDissolveFactor();
 	}
 
 	return (color + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
