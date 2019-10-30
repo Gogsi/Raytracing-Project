@@ -556,26 +556,19 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 		}
 	}
 
-	if (!canSeeLight(lightPosition, hit.point)) {
-		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1- mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor);
-
-		for (size_t i = 0; i < illum_rays.size(); i++)
-		{
-			global_colors.push_back(traceRay(bounce + 1, illum_rays[i]));
-		}
-
-		for (size_t i = 0; i < global_colors.size(); i++)
-		{
-			globalIllum += global_colors[i];
-		}
-		globalIllum /= GLOBAL_RESOLUTION;*/
+	/*for (size_t i = 0; i < illum_rays.size(); i++)
+	{
+		global_colors.push_back(traceRay(bounce + 1, illum_rays[i]));
 	}
 
-
+	for (size_t i = 0; i < global_colors.size(); i++)
+	{
+		globalIllum += global_colors[i];
+	}
+	globalIllum /= GLOBAL_RESOLUTION;*/
 
 	if (!canSeeLight(lightPosition, hit.point)) {
-		return (mat.getAmbient().cwiseProduct(lightIntensity)) +mat.getSpecular().cwiseProduct(reflectedColor)) + mat.getDissolveFactor() * refractedColor;
-
+		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor);
 	}
 
 	Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
