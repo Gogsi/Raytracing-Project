@@ -111,7 +111,7 @@ public:
 
   void renderBoundingBoxes();
 
-
+  std::pair<HitInfo,Tucano::Face> getIntersections(Ray ray);
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
