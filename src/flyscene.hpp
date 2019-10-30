@@ -107,7 +107,7 @@ public:
 
   void initBoundingBoxes();
 
-  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce, int jumps);
 
   void renderBoundingBoxes();
 
@@ -115,6 +115,8 @@ public:
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
+
+  int jumps;
 
   // A fly through camera
   Tucano::Flycamera flycamera;

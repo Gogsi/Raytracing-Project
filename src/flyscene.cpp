@@ -162,6 +162,26 @@ void Flyscene::simulate(GLFWwindow* window) {
 	float dz = (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ? 0.1 : 0.0) -
 		(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ? 0.1 : 0.0);
 	flycamera.translate(dx, dy, dz);
+
+	static int old_stateM = GLFW_RELEASE;
+	int new_stateM = glfwGetKey(window, GLFW_KEY_M);
+
+	static int old_stateN = GLFW_RELEASE;
+	int new_stateN = glfwGetKey(window, GLFW_KEY_N);
+
+	if (new_stateM == GLFW_RELEASE && old_stateM == GLFW_PRESS) {
+		jumps++;
+		std::cout << "total reflections: " << jumps << std::endl;
+	}
+
+	old_stateM = new_stateM;
+
+	if (new_stateN == GLFW_RELEASE && old_stateN == GLFW_PRESS) {
+		jumps--;
+		std::cout << "total reflections: " << jumps << std::endl;
+	}
+
+	old_stateN = new_stateN;
 }
 
 void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
@@ -175,7 +195,7 @@ void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
 	// direction from camera center to click position
 	Eigen::Vector3f dir = (screen_pos - flycamera.getCenter()).normalized();
 
-	ReflectDebugRay(flycamera.getCenter(), dir, 0);
+	ReflectDebugRay(flycamera.getCenter(), dir, 0, jumps);;
 
 	// position and orient the cylinder representing the ray
 	//ray.setOriginOrientation(flycamera.getCenter(), dir);
@@ -186,7 +206,7 @@ void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
 }
 
 // Debug Ray
-void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce) {
+void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce, int jumps) {
 
 	Tucano::Shapes::Cylinder reflectionRay = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
 
@@ -194,7 +214,7 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 
 	int max_bounce = 10;
 
-	if (bounce > max_bounce) {
+	if (bounce > jumps) {
 		return;
 	}
 
@@ -266,7 +286,7 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 		Ray newRay = r.reflectRay(smallestHit.normal, smallestHit.point);
 		Eigen::Vector3f origin2 = newRay.getOrigin();
 		Eigen::Vector3f dir2 = newRay.getDirection();
-		return ReflectDebugRay(origin2, dir2, bounce + 1);
+		return ReflectDebugRay(origin2, dir2, bounce + 1, jumps);
 	}
 }
 

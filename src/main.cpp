@@ -52,6 +52,8 @@ void initialize(void) {
             << std::endl;
   std::cout << "T    : Ray trace the scene." << std::endl;
   std::cout << "Esc  : Close application." << std::endl;
+  std::cout << "N    : Increase reflection by 1." << std::endl;
+  std::cout << "M    : Decrease reflection by 1." << std::endl;
   std::cout << " ********************************* " << std::endl;
 }
 
