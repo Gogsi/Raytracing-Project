@@ -31,6 +31,19 @@ void Flyscene::initialize(int width, int height) {
 
 
   for (int i = 0; i < mesh.getNumberOfFaces(); ++i) {
+
+	  //Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(mesh.getFace(i).vertex_ids[0])).head<3>();
+	  //Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(mesh.getFace(i).vertex_ids[1])).head<3>();
+	  //Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(mesh.getFace(i).vertex_ids[2])).head<3>();
+
+	  //float v_average_x = (v0.x() + v1.x() + v2.x()) / 3;
+	  //float v_average_y = (v0.y() + v1.y() + v2.y()) / 3;
+	  //float v_average_z = (v0.z() + v1.z() + v2.z()) / 3;
+
+	  //Eigen::Vector3f v_average = Eigen::Vector3f(v_average_x, v_average_y, v_average_z);
+
+	  //Eigen::Vector3f normalu = interNormal(mesh.getFace(i), v_average);
+
 	  triangles.push_back(mesh.getFace(i));
   }
 
@@ -74,7 +87,7 @@ void Flyscene::initialize(int width, int height) {
  // divideBox_KD(1000);
 
   // Flat structure:
-  this->boxes = divideBox(root_box, 1000);
+  this->boxes = divideBox(root_box, 30);
   
   // if u want to visualize the bounding boxeswith flat structure
   #define show_flat
@@ -440,6 +453,9 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 				smallestT = result_triangle.t;
 				smallestHit = result_triangle;
 				closest_triangle = curr_box.triangles.at(result_triangle.faceId);
+
+				//Eigen::Vector3f normal = interNormal(curr_box.triangles.at(result_triangle.faceId), smallestHit.point);
+				//smallestHit.setNormal(normal);
 			}
 		}
 	}
@@ -454,18 +470,19 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray) {
 	if (smallestT != INFINITY) {
 		return Shader(bounce, closest_triangle, smallestHit, ray);
 	}
+
 	
 	
 	if(bounce == 0) return Eigen::Vector3f(1.0, 1.0, 1.0);
 	return Eigen::Vector3f(0.0, 0.0, 0.0);
 }
 
-Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray) {
+Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face& face, HitInfo hit, Ray ray) {
+	
+	Eigen::Vector3f normalN = hit.normal;
 
-	//Tucano::Face face = mesh.getFace(hit.faceId);
 	auto mat = materials[face.material_id];
 
-	Eigen::Vector3f normalN = hit.normal;
 	Eigen::Vector3f totalColor = Eigen::Vector3f(0.0, 0.0, 0.0);
 
 	for (auto lightPosition : lights)
@@ -503,11 +520,102 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 
 		Eigen::Vector3f color = ambient + diffuse + specular;
 
-		totalColor += color +mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
+		totalColor += color + mat.getSpecular().cwiseProduct(reflectedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 	}
-	
+
 	return totalColor;
 }
+
+//Eigen::Vector3f Flyscene::interNormal(Tucano::Face face, Eigen::Vector3f point) {
+//
+//	Eigen::Vector3f v0 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[0])).head<3>();
+//	Eigen::Vector3f v1 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[1])).head<3>();
+//	Eigen::Vector3f v2 = (mesh.getShapeModelMatrix() * mesh.getVertex(face.vertex_ids[2])).head<3>();
+//
+//	Eigen::Vector3f n0 = mesh.getNormal(face.vertex_ids[0]).normalized();
+//	Eigen::Vector3f n1 = mesh.getNormal(face.vertex_ids[1]).normalized();
+//	Eigen::Vector3f n2 = mesh.getNormal(face.vertex_ids[2]).normalized();
+//
+//	Eigen::Vector3f normalizeNormal0 = (mesh.getShapeModelMatrix().inverse().matrix().transpose() * Eigen::Vector4f(n0.x(), n0.y(), n0.z(), 0)).head<3>().normalized();
+//	Eigen::Vector3f normalizeNormal1 = (mesh.getShapeModelMatrix().inverse().matrix().transpose() * Eigen::Vector4f(n1.x(), n1.y(), n1.z(), 0)).head<3>().normalized();
+//	Eigen::Vector3f normalizeNormal2 = (mesh.getShapeModelMatrix().inverse().matrix().transpose() * Eigen::Vector4f(n2.x(), n2.y(), n2.z(), 0)).head<3>().normalized();
+//
+//	Eigen::Vector3f edge_0 = v0 - point;
+//	Eigen::Vector3f edge_1 = v1 - point;
+//	Eigen::Vector3f edge_2 = v2 - point;
+//
+//
+//	Eigen::Vector3f a = (v0 - v1).cross(v0 - v2);
+//	Eigen::Vector3f b = (edge_1).cross(edge_2);
+//	Eigen::Vector3f c = (edge_2).cross(edge_0);
+//	Eigen::Vector3f d = (edge_0).cross(edge_1);
+//
+//	int b1 = 1;
+//	int c1 = 1;
+//	int d1 = 1;
+//	if (a.dot(b) < 0) {
+//		b1 = -1;
+//	}
+//	if (a.dot(c) < 0) {
+//		c1 = -1;
+//	}
+//	if (a.dot(d) < 0) {
+//		d1 = -1;
+//	}
+//
+//	float bb = (b.norm() / a.norm()) * b1;
+//	float cc = (c.norm() / a.norm()) * c1;
+//	float dd = (d.norm() / a.norm()) * d1;
+//
+//
+//
+//
+//
+//	Eigen::Vector3f normalo = normalizeNormal0 * bb + normalizeNormal1 * cc + normalizeNormal2 * dd;
+// 
+//
+//	return normalo.normalized();
+//
+//
+//	//Eigen::Vector3f u = v1 - v0;
+//	//Eigen::Vector3f v = v2 - v0;
+//	//Eigen::Vector3f w = point - v0;
+//
+//	//float uDotU = u.dot(u);
+//	//float uDotV = u.dot(v);
+//	//float vDotV = v.dot(v);
+//
+//	//float wDotU = w.dot(u);
+//	//float wDotV = w.dot(v);
+//
+//	//float denom = uDotU * vDotV - uDotV * uDotV;
+//	//float s1 = vDotV * wDotU - uDotV * wDotV;
+//	//float t1 = uDotU * wDotV - uDotV * wDotU;
+//
+//	//float s = s1 / denom;
+//	//float t = t1 / denom;
+//	//float z = 1.0f - s - t;
+//
+//	//Eigen::Vector3f vertexo = (z * v0) + (t * v1) + (s * v2);
+//	//if (vertexo.x() == point.x() && vertexo.y() == point.y() && vertexo.z() == point.z()) {
+//	//	std::cout << "x: " << vertexo.x() << " y: " << vertexo.y() << " z: " << vertexo.z() << std::endl;
+//	//	std::cout << "x: " << point.x() << " y: " << point.y() << " z: " << point.z() << std::endl;
+//	//	std::cout << "equal " << std::endl;
+//	//}
+//	//else {
+//	//	std::cout << "x: " << vertexo.x() << " y: " << vertexo.y() << " z: " << vertexo.z() << std::endl;
+//	//	std::cout << "x: " << point.x() << " y: " << point.y() << " z: " << point.z() << std::endl;
+//	//	std::cout << "not equal " << std::endl;
+//	//}
+//
+//	//Eigen::Vector3f normalo = ((z * n0) + (s * n1) + (t * n2));
+//	//Eigen::Vector3f normalN = normalo.normalized();
+//
+//	//return normalN;
+//
+//}
+
+
 
 Eigen::Vector3f Flyscene::reflect(Eigen::Vector3f light, Eigen::Vector3f normal) {
 	return  light - 2 * normal.dot(light) * normal;
