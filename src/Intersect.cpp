@@ -63,25 +63,36 @@ namespace Intersect {
 		return res;
 	}
 
+	// Ray object intersection with a Box object
 	HitInfo BoxObject::intersects(Ray& ray) {
 
 		Box _box = box;
 
 		Eigen::Vector3f dir = ray.getDirection();
 		Eigen::Vector3f origin = ray.getOrigin();
-		Eigen::Vector3f invDir = Eigen::Vector3f(1 / dir.x(), 1 / dir.y(), 1 / dir.z());
+		Eigen::Vector3f invDir = Eigen::Vector3f(1 / dir.x(), 1 / dir.y(), 1 / dir.z()); //The inverted direction
 
-		float tmin, tmax, tymin, tymax, tzmin, tzmax;
+		float txmin, txmax, tymin, tymax, tzmin, tzmax; //The boundaries for the box
 
+		/** 
+		* Checking the direction of the ray in x coordinate.
+		* TRUE, txmin is infront of txmax
+		* FALSE, txmin is behind of txmax
+		*/
 		if (invDir.x() >= 0) {
-			tmin = (_box.tmin.x() - origin.x()) * invDir.x();
-			tmax = (_box.tmax.x() - origin.x()) * invDir.x();
+			txmin = (_box.tmin.x() - origin.x()) * invDir.x();
+			txmax = (_box.tmax.x() - origin.x()) * invDir.x();
 		}
 		else {
-			tmin = (_box.tmax.x() - origin.x()) * invDir.x();
-			tmax = (_box.tmin.x() - origin.x()) * invDir.x();
+			txmin = (_box.tmax.x() - origin.x()) * invDir.x();
+			txmax = (_box.tmin.x() - origin.x()) * invDir.x();
 		}
 
+		/** 
+		* Checking the direction of the ray in y coordinate.
+		* TRUE, tymin is infront of tymax
+		* FALSE, tymin is behind of tymax
+		*/
 		if (invDir.y() >= 0) {
 			tymin = (_box.tmin.y() - origin.y()) * invDir.y();
 			tymax = (_box.tmax.y() - origin.y()) * invDir.y();
@@ -90,16 +101,26 @@ namespace Intersect {
 			tymin = (_box.tmax.y() - origin.y()) * invDir.y();
 			tymax = (_box.tmin.y() - origin.y()) * invDir.y();
 		}
-		if ((tmin > tymax) || (tymin > tmax)) {
+
+		/**
+		* Check the ray for intersection of plane.
+		* Return INFINITY for t if ray doesn't intersect plane.
+		*/
+		if ((txmin > tymax) || (tymin > txmax)) {
 			return HitInfo{ INFINITY, -1 };
 		}
-		if (tymin > tmin) {
-			tmin = tymin;
+		if (tymin > txmin) {
+			txmin = tymin;
 		}
-		if (tymax < tmax) {
-			tmax = tymax;
+		if (tymax < txmax) {
+			txmax = tymax;
 		}
 
+		/**
+		* Checking the direction of the ray in z coordinate.
+		* TRUE, tymin is infront of tymax
+		* FALSE, tymin is behind of tymax
+		*/
 		if (invDir.z() >= 0) {
 			tzmin = (_box.tmin.z() - origin.z()) * invDir.z();
 			tzmax = (_box.tmax.z() - origin.z()) * invDir.z();
@@ -109,17 +130,18 @@ namespace Intersect {
 			tzmax = (_box.tmin.z() - origin.z()) * invDir.z();
 		}
 
-		if ((tmin > tzmax) || (tzmin > tmax)) {
+		if ((txmin > tzmax) || (tzmin > txmax)) {
 			return HitInfo{ INFINITY, -1 };
 		}
-		if (tzmin > tmin) {
-			tmin = tzmin;
+		if (tzmin > txmin) {
+			txmin = tzmin;
 		}
-		if (tzmax < tmax) {
-			tmax = tzmax;
+		if (tzmax < txmax) {
+			txmax = tzmax;
 		}
 
-		return HitInfo{ tmin, -1 };
+		//return the smallest distance from ray to box.
+		return HitInfo{ txmin, -1 };
 	}
 
 	HitInfo Sphere::intersects(Ray& ray) {

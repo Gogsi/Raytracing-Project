@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
 	// load the OBJ file and materials
 	Tucano::MeshImporter::loadObjFile(mesh, materials,
-		"resources/models/test.obj");
+		"resources/models/toy.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -34,6 +34,8 @@ void Flyscene::initialize(int width, int height) {
 		triangles.push_back(mesh.getFace(i));
 	}
 
+	renderBox = true;
+	renderAllBox = false;
 
 	// set the color and size of the sphere to represent the light sources
 	// same sphere is used for all sources
@@ -77,7 +79,10 @@ void Flyscene::initialize(int width, int height) {
    //#define show_KD
 
 	// Flat structure:
-	this->boxes = divideBox(root_box, 12);
+	// change if needed
+	int facePerCube = sqrt(mesh.getNumberOfFaces() + 100);
+
+	this->boxes = divideBox(root_box, facePerCube);
 #define show_flat
 
 	// if u want to visualize the bounding boxes 
@@ -116,16 +121,27 @@ void Flyscene::paintGL(void) {
 		rays.at(i).render(flycamera, scene_light);
 	}
 
-	for (auto i = 0; i < ray_hitbox.size(); i++) {
-		ray_hitbox.at(i).render(flycamera, scene_light);
+	if (renderBox) {
+		for (auto i = 0; i < ray_hitbox.size(); i++) {
+
+
+			ray_hitbox.at(i).render(flycamera, scene_light);
+		}
 	}
+
+	if (renderAllBox) {
+		for (auto i = 0; i < bounding_boxes.size(); i++)
+		{
+			bounding_boxes.at(i).render(flycamera, scene_light);
+		}
+	}
+
 
 
 	//ray.render(flycamera, scene_light);
 	camerarep.render(flycamera, scene_light);
 
 	// render the ray and camera representation for ray debug
-	ray.render(flycamera, scene_light);
 	camerarep.render(flycamera, scene_light);
 
 	// render ray tracing light sources as yellow spheres
@@ -162,6 +178,58 @@ void Flyscene::simulate(GLFWwindow* window) {
 	float dz = (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS ? 0.1 : 0.0) -
 		(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS ? 0.1 : 0.0);
 	flycamera.translate(dx, dy, dz);
+
+	static int old_stateM = GLFW_RELEASE;
+	int new_stateM = glfwGetKey(window, GLFW_KEY_M);
+
+	static int old_stateN = GLFW_RELEASE;
+	int new_stateN = glfwGetKey(window, GLFW_KEY_N);
+
+	static int old_stateO = GLFW_RELEASE;
+	int new_stateO = glfwGetKey(window, GLFW_KEY_O);
+
+	static int old_stateU = GLFW_RELEASE;
+	int new_stateU = glfwGetKey(window, GLFW_KEY_U);
+
+	if (new_stateM == GLFW_RELEASE && old_stateM == GLFW_PRESS) {
+		jumps++;
+		std::cout << "total reflections: " << jumps << std::endl;
+	}
+
+	old_stateM = new_stateM;
+
+	if (new_stateN == GLFW_RELEASE && old_stateN == GLFW_PRESS) {
+		jumps--;
+		std::cout << "total reflections: " << jumps << std::endl;
+	}
+
+	old_stateN = new_stateN;
+
+	if (new_stateO == GLFW_RELEASE && old_stateO == GLFW_PRESS) {
+		if (renderBox) {
+			renderBox = false;
+		}
+		else {
+			renderBox = true;
+		}
+	}
+
+	old_stateO = new_stateO;
+
+	if (new_stateU == GLFW_RELEASE && old_stateU == GLFW_PRESS) {
+		if (renderAllBox) {
+			renderAllBox = false;
+		}
+		else {
+			renderAllBox = true;
+		}
+	}
+
+	old_stateU = new_stateU;
+
+
+
+
 }
 
 void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
@@ -175,7 +243,7 @@ void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
 	// direction from camera center to click position
 	Eigen::Vector3f dir = (screen_pos - flycamera.getCenter()).normalized();
 
-	ReflectDebugRay(flycamera.getCenter(), dir, 0);
+	ReflectDebugRay(flycamera.getCenter(), dir, 0, jumps);;
 
 	// position and orient the cylinder representing the ray
 	//ray.setOriginOrientation(flycamera.getCenter(), dir);
@@ -186,15 +254,13 @@ void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
 }
 
 // Debug Ray
-void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce) {
+void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce, int jumps) {
 
 	Tucano::Shapes::Cylinder reflectionRay = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
 
 	reflectionRay.setOriginOrientation(origin, dir);
 
-	int max_bounce = 10;
-
-	if (bounce > max_bounce) {
+	if (bounce > jumps) {
 		return;
 	}
 
@@ -251,7 +317,7 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 
 		for (auto i = 0; i < lights.size(); i++)
 		{
-			if (canSeeLight(lights.at(i), smallestHit.point).first) {
+			if (canSeeLight(lights.at(i), smallestHit.point)) {
 				Tucano::Shapes::Cylinder rayToLight = Tucano::Shapes::Cylinder(0.1, 1.0, 16, 64);
 				Vector3f direction = (lights.at(i) - smallestHit.point).normalized();
 
@@ -266,7 +332,7 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 		Ray newRay = r.reflectRay(smallestHit.normal, smallestHit.point);
 		Eigen::Vector3f origin2 = newRay.getOrigin();
 		Eigen::Vector3f dir2 = newRay.getDirection();
-		return ReflectDebugRay(origin2, dir2, bounce + 1);
+		return ReflectDebugRay(origin2, dir2, bounce + 1, jumps);
 	}
 }
 
@@ -342,13 +408,13 @@ void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eige
 		abort();
 	}
 
-	/*for (size_t i = 0; i < spherePositions.size(); i++)
+	for (size_t i = 0; i < spherePositions.size(); i++)
 	{
 		auto tempMat = currentScene.addSphere(spherePositions[i].head<3>(), spherePositions[i].w(), sphereColors[i]);
 		int mat_id = materials.size();
 		materials.push_back(tempMat);
 		currentScene.getSphere(i).setMaterialID(mat_id);
-	}*/
+	}
 
 	for (int j = thread_id; j < image_size[1]; j += number_threads) {
 		for (int i = 0; i < image_size[0]; i++) {
@@ -546,7 +612,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 		if (insideObject)
 		{
-			Ray refractedRay = ray.refractRay(-hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity(), 1.0);
+			Ray refractedRay = ray.refractRay(hit.normal, hit.point, -eyeDirection, mat.getOpticalDensity(), 1.0);
 			refractedColor = traceRay(bounce + 1, refractedRay, !insideObject);
 		}
 		else
@@ -568,7 +634,9 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 	}
 	globalIllum /= GLOBAL_RESOLUTION;*/
 
-	pair<bool, Tucano::Material::Mtl> result = canSeeLight(lightPosition, hit.point);
+	if (!canSeeLight(lightPosition, hit.point)) {
+		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor);
+	}
 
 	Eigen::Vector3f ambient = mat.getAmbient().cwiseProduct(lightIntensity);
 
@@ -578,21 +646,10 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 	Eigen::Vector3f color = ambient + diffuse + specular;
 
-	if (!result.first) {
-
-		Eigen::Vector3f ambientS = result.second.getAmbient().cwiseProduct(lightIntensity);
-		Eigen::Vector3f diffuseS = std::max(normalN.dot(lightDirection), 0.0f) * result.second.getDiffuse().cwiseProduct(lightIntensity);
-		Eigen::Vector3f specularS = lightIntensity.cwiseProduct(result.second.getSpecular()) * std::pow(std::max(dotted, 0.0f), result.second.getShininess());
-
-		Eigen::Vector3f colorS = ambientS + diffuseS + specularS;
-
-		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor) + color * result.second.getDissolveFactor();
-	}
-
 	return (color + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 }
 
-pair<bool, Tucano::Material::Mtl> Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
+bool Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
 {
 	Eigen::Vector3f toLight = lightPos - position;
 	Ray ray = Ray(position, toLight.normalized());
@@ -614,19 +671,13 @@ pair<bool, Tucano::Material::Mtl> Flyscene::canSeeLight(Eigen::Vector3f lightPos
 
 	auto result = getIntersections(ray);
 	HitInfo trianglHit = result.first;
-	Tucano::Material::Mtl material;
+
 	if (trianglHit.t != INFINITY && trianglHit.t > toLightLength)
 	{
 		//eventualHit = trianglHit;
 		behind = true;
 	}
-
-	if (trianglHit.t != INFINITY && trianglHit.t < toLightLength)
-	{
-		material = materials[result.second.material_id];
-	}
-
-	return make_pair(((!sphereBlock && trianglHit.t == INFINITY) || behind == true), material);
+	return ((!sphereBlock && trianglHit.t == INFINITY) || behind == true);
 }
 
 HitInfo Flyscene::intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir) {

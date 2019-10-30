@@ -23,6 +23,7 @@
 #include "box.h"
 #include "Intersect.h"
 #include "Scene.h"
+#include <cmath>
 
 class Flyscene {
 
@@ -107,7 +108,7 @@ public:
 
   void initBoundingBoxes();
 
-  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce, int jumps);
 
   void renderBoundingBoxes();
 
@@ -115,6 +116,8 @@ public:
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
+
+  int jumps;
 
   // A fly through camera
   Tucano::Flycamera flycamera;
@@ -162,6 +165,9 @@ private:
 
   Scene currentScene = Scene();
 
+  bool renderBox;
+
+  bool renderAllBox;
 public:
   // Root box
   Box root_box;
