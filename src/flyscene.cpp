@@ -44,8 +44,8 @@ void Flyscene::initialize(int width, int height) {
 	lightrep.setSize(0.15);
 
 	// create a first ray-tracing light source at some random position
-	//lights.push_back(Eigen::Vector3f(-1.0, 1.0, 1.0));
-	sphericalLights.push_back(make_pair(Eigen::Vector3f(-1.0, 1.0, 1.0), 0.1));
+	lights.push_back(Eigen::Vector3f(-1.0, 1.0, 1.0));
+	//sphericalLights.push_back(make_pair(Eigen::Vector3f(-1.0, 1.0, 1.0), 0.1));
 
 	// scale the camera representation (frustum) for the ray debug
 	camerarep.shapeMatrix()->scale(0.2);
@@ -130,8 +130,8 @@ void Flyscene::paintGL(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	scene_light.resetViewMatrix();
-	//scene_light.viewMatrix()->translate(-lights.back());
-	scene_light.viewMatrix()->translate(-sphericalLights.back().first);
+	scene_light.viewMatrix()->translate(-lights.back());
+	//scene_light.viewMatrix()->translate(-sphericalLights.back().first);
 
   // render the scene using OpenGL and one light source
 	phong.render(mesh, flycamera, scene_light);
@@ -671,7 +671,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 {
 	// LIGHT
 	int numLights = lights.size() + sphericalLights.size();
-	Eigen::Vector3f lightIntensity = Eigen::Vector3f(0.8, 0.8, 0.8) / numLights;
+	Eigen::Vector3f lightIntensity = Eigen::Vector3f(0.8, 0.75, 0.6) / numLights;
 	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
 	Eigen::Vector3f reflectedLight = Shader::reflect(-lightDirection, normalN);
 
