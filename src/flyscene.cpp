@@ -34,6 +34,8 @@ void Flyscene::initialize(int width, int height) {
 		triangles.push_back(mesh.getFace(i));
 	}
 
+	renderBox = true;
+	renderAllBox = false;
 
 	// set the color and size of the sphere to represent the light sources
 	// same sphere is used for all sources
@@ -116,16 +118,27 @@ void Flyscene::paintGL(void) {
 		rays.at(i).render(flycamera, scene_light);
 	}
 
-	for (auto i = 0; i < ray_hitbox.size(); i++) {
-		ray_hitbox.at(i).render(flycamera, scene_light);
+	if (renderBox) {
+		for (auto i = 0; i < ray_hitbox.size(); i++) {
+
+
+			ray_hitbox.at(i).render(flycamera, scene_light);
+		}
 	}
+
+	if (renderAllBox) {
+		for (auto i = 0; i < bounding_boxes.size(); i++)
+		{
+			bounding_boxes.at(i).render(flycamera, scene_light);
+		}
+	}
+
 
 
 	//ray.render(flycamera, scene_light);
 	camerarep.render(flycamera, scene_light);
 
 	// render the ray and camera representation for ray debug
-	ray.render(flycamera, scene_light);
 	camerarep.render(flycamera, scene_light);
 
 	// render ray tracing light sources as yellow spheres
@@ -169,6 +182,12 @@ void Flyscene::simulate(GLFWwindow* window) {
 	static int old_stateN = GLFW_RELEASE;
 	int new_stateN = glfwGetKey(window, GLFW_KEY_N);
 
+	static int old_stateO = GLFW_RELEASE;
+	int new_stateO = glfwGetKey(window, GLFW_KEY_O);
+
+	static int old_stateU = GLFW_RELEASE;
+	int new_stateU = glfwGetKey(window, GLFW_KEY_U);
+
 	if (new_stateM == GLFW_RELEASE && old_stateM == GLFW_PRESS) {
 		jumps++;
 		std::cout << "total reflections: " << jumps << std::endl;
@@ -182,6 +201,32 @@ void Flyscene::simulate(GLFWwindow* window) {
 	}
 
 	old_stateN = new_stateN;
+
+	if (new_stateO == GLFW_RELEASE && old_stateO == GLFW_PRESS) {
+		if (renderBox) {
+			renderBox = false;
+		}
+		else {
+			renderBox = true;
+		}
+	}
+
+	old_stateO = new_stateO;
+
+	if (new_stateU == GLFW_RELEASE && old_stateU == GLFW_PRESS) {
+		if (renderAllBox) {
+			renderAllBox = false;
+		}
+		else {
+			renderAllBox = true;
+		}
+	}
+
+	old_stateU = new_stateU;
+
+
+
+
 }
 
 void Flyscene::createDebugRay(const Eigen::Vector2f& mouse_pos) {
@@ -213,6 +258,10 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 	reflectionRay.setOriginOrientation(origin, dir);
 
 	int max_bounce = 10;
+
+	if (jumps < 0) {
+		return
+	}
 
 	if (bounce > jumps) {
 		return;

@@ -54,6 +54,8 @@ void initialize(void) {
   std::cout << "Esc  : Close application." << std::endl;
   std::cout << "N    : Increase reflection by 1." << std::endl;
   std::cout << "M    : Decrease reflection by 1." << std::endl;
+  std::cout << "U    : Show all bounding boxes." << std::endl;
+  std::cout << "O    : Show interecting bounding boxes." << std::endl;
   std::cout << " ********************************* " << std::endl;
 }
 

@@ -164,6 +164,11 @@ private:
 
   Scene currentScene = Scene();
 
+  bool renderBox;
+
+  bool renderAllBox;
+
+
 public:
   // Root box
   Box root_box;
