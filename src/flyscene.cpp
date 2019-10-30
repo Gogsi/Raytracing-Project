@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
 	// load the OBJ file and materials
 	Tucano::MeshImporter::loadObjFile(mesh, materials,
-		"resources/models/test.obj");
+		"resources/models/toy.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -74,19 +74,22 @@ void Flyscene::initialize(int width, int height) {
 	// create the array of boxes
 	this->root_box = Box(mesh);
 
+	int facePerCube = sqrt(mesh.getNumberOfFaces() + 100);
+
 	// KD Trees :
-   // divideBox_KD(1000);
-   //#define show_KD
+    divideBox_KD(facePerCube);
+	 #define KD
+ 
 
 	// Flat structure:
 	// change if needed
-	int facePerCube = 12;
 
-	this->boxes = divideBox(root_box, facePerCube);
-#define show_flat
+	//this->boxes = divideBox(root_box, facePerCube);
+//#define show_flat
 
 	// if u want to visualize the bounding boxes 
 	//#define show_bounding
+	#define show_KD
 
 	initBoundingBoxes();
 
@@ -185,8 +188,8 @@ void Flyscene::simulate(GLFWwindow* window) {
 	static int old_stateN = GLFW_RELEASE;
 	int new_stateN = glfwGetKey(window, GLFW_KEY_N);
 
-	static int old_stateO = GLFW_RELEASE;
-	int new_stateO = glfwGetKey(window, GLFW_KEY_O);
+	static int old_stateK = GLFW_RELEASE;
+	int new_stateK = glfwGetKey(window, GLFW_KEY_K);
 
 	static int old_stateU = GLFW_RELEASE;
 	int new_stateU = glfwGetKey(window, GLFW_KEY_U);
@@ -205,7 +208,7 @@ void Flyscene::simulate(GLFWwindow* window) {
 
 	old_stateN = new_stateN;
 
-	if (new_stateO == GLFW_RELEASE && old_stateO == GLFW_PRESS) {
+	if (new_stateK == GLFW_RELEASE && old_stateK == GLFW_PRESS) {
 		if (renderBox) {
 			renderBox = false;
 		}
@@ -214,7 +217,7 @@ void Flyscene::simulate(GLFWwindow* window) {
 		}
 	}
 
-	old_stateO = new_stateO;
+	old_stateK = new_stateK;
 
 	if (new_stateU == GLFW_RELEASE && old_stateU == GLFW_PRESS) {
 		if (renderAllBox) {
