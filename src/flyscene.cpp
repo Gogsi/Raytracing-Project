@@ -20,7 +20,7 @@ void Flyscene::initialize(int width, int height) {
 
 	// load the OBJ file and materials
 	Tucano::MeshImporter::loadObjFile(mesh, materials,
-		"resources/models/twoObjects.obj");
+		"resources/models/toy.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -79,7 +79,10 @@ void Flyscene::initialize(int width, int height) {
    //#define show_KD
 
 	// Flat structure:
-	this->boxes = divideBox(root_box, 12);
+	// change if needed
+	int facePerCube = sqrt(mesh.getNumberOfFaces() + 100);
+
+	this->boxes = divideBox(root_box, facePerCube);
 #define show_flat
 
 	// if u want to visualize the bounding boxes 

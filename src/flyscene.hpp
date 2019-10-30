@@ -23,6 +23,7 @@
 #include "box.h"
 #include "Intersect.h"
 #include "Scene.h"
+#include <cmath>
 
 class Flyscene {
 
@@ -167,8 +168,6 @@ private:
   bool renderBox;
 
   bool renderAllBox;
-
-
 public:
   // Root box
   Box root_box;
