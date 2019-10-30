@@ -97,7 +97,7 @@ public:
 
   Eigen::Vector3f Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray, bool insideObject);
 
-  bool canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
+  pair<bool, Tucano::Material::Mtl> canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
 
   void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 

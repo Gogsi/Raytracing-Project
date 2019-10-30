@@ -14,7 +14,7 @@ private:
 public:
 	Ray(Eigen::Vector3f _origin, Eigen::Vector3f _dir) {
 		origin = _origin;
-		dir = _dir;
+		dir = _dir.normalized();
 	}
 
 	Eigen::Vector3f getOrigin() {
