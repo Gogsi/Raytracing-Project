@@ -66,9 +66,6 @@ namespace Intersect {
 			radius = _radius;
 		}
 		bool solveQuadratic(float& a,  float& b,  float& c, float& x0, float& x1);
-		bool doesIntersect(Ray& ray);
-
-		
 	};
 
 	class BoxObject : public Face {

@@ -134,7 +134,6 @@ namespace Intersect {
 		float b = 2 * ray.getDirection().dot(L);
 		float c = L.dot(L) - radius2;
 		if (!solveQuadratic(a, b, c, t0, t1)) return res;
-
 		if (t0 > t1) std::swap(t0, t1);
 
 		if (t0 < 0) {
@@ -142,49 +141,14 @@ namespace Intersect {
 			if (t0 < 0) return res; // both t0 and t1 are negative 
 		}
 
+		float t = t0;
+
 		res.t = t0;
 		res.faceId = -1;
-		res.point = ray.getPointOnRay(t0);
+		res.point = ray.getPointOnRay(t);
 		res.normal = (res.point - vertices[0]).normalized();
 
 		return res;
-	}
-
-	bool Sphere::doesIntersect(Ray& ray)
-	{
-		float t0, t1; // solutions for t if the ray intersects 
-		Eigen::Vector3f orig = ray.getOrigin();
-		Eigen::Vector3f center = vertices[0];
-		Eigen::Vector3f dir = ray.getDirection();
-		float radius2 = radius * radius;
-#if 1 
-		// geometric solution
-		Eigen::Vector3f L = center - orig;
-		float tca = L.dot(dir);
-		// if (tca < 0) return false;
-		float d2 = L.dot(L) - tca * tca;
-		if (d2 > radius2) return false;
-		float thc = sqrt(radius2 - d2);
-		t0 = tca - thc;
-		t1 = tca + thc;
-#else 
-		// analytic solution
-		Eigen::Vector3f L = orig - center;
-		float a = dir.dot(dir);
-		float b = 2 * dir.dot(L);
-		float c = L.dot(L) - radius2;
-		if (!solveQuadratic(a, b, c, t0, t1)) return false;
-#endif 
-		if (t0 > t1) std::swap(t0, t1);
-
-		if (t0 < 0) {
-			t0 = t1; // if t0 is negative, let's use t1 instead 
-			if (t0 < 0) return false; // both t0 and t1 are negative 
-		}
-
-		float t = t0;
-
-		return true;
 	}
 
 	bool Sphere::solveQuadratic(float& a,  float& b, float& c, float& x0, float& x1)
