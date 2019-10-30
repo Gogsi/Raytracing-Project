@@ -739,7 +739,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 		Eigen::Vector3f colorS = ambientS + diffuseS + specularS;
 
-		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor) + color * result.second.getDissolveFactor();
+		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor) + colorS * result.second.getDissolveFactor();
 	}
 
 	return (color + globalIllum + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
