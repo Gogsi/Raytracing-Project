@@ -33,11 +33,11 @@ public:
 		Eigen::Vector3f newDir = dir - 2 * (dir.dot(normal)) * normal;
 		return Ray(point, newDir);
 	}
-	Ray refractRay(Eigen::Vector3f normal, Eigen::Vector3f point, Eigen::Vector3f viewDirection, float refractionIndex) {
+	Ray refractRay(Eigen::Vector3f normal, Eigen::Vector3f point, Eigen::Vector3f viewDirection, float firstIndex, float secondIndex) {
 		float dot = viewDirection.dot(normal);
-		float numerator = (1 - pow(dot, 2));
-		float root = sqrt(1 - (numerator / pow(refractionIndex, 2)));
-		Eigen::Vector3f t = (1 / refractionIndex) * (viewDirection - dot * normal) - normal * root;
+		float numerator = pow(firstIndex, 2) * (1 - pow(dot, 2));
+		float root = sqrt(1 - (numerator / pow(secondIndex, 2)));
+		Eigen::Vector3f t = (firstIndex / secondIndex) * (viewDirection - dot * normal) - normal * root;
 		return Ray(point, t);
 	}
 	std::vector<Ray> resendRay(Eigen::Vector3f normal, Eigen::Vector3f point, int n) {

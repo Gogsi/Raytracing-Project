@@ -77,7 +77,7 @@ public:
    * @param dest Other point on the ray, usually screen coordinates
    * @return a RGB color
    */
-  Eigen::Vector3f traceRay(int bounce, Ray ray);
+  Eigen::Vector3f traceRay(int bounce, Ray ray, bool insideObject);
 
   HitInfo intersectPlane(Eigen::Vector3f& origin, Eigen::Vector3f& dir);
 
@@ -95,7 +95,7 @@ public:
 
   Eigen::Vector3f averagePoint(Box& box);
 
-  Eigen::Vector3f Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray);
+  Eigen::Vector3f Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray, bool insideObject);
 
   bool canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
 
@@ -103,7 +103,7 @@ public:
 
   void divideBox_KD(int max_numberFaces);
 
-  Eigen::Vector3f calculateColor(int bounce, Eigen::Vector3f lightPosition, HitInfo hit, Eigen::Vector3f normalN, Ray ray, Tucano::Material::Mtl mat);
+  Eigen::Vector3f calculateColor(int bounce, Eigen::Vector3f lightPosition, HitInfo hit, Eigen::Vector3f normalN, Ray ray, Tucano::Material::Mtl mat, bool insideObject);
 
   void initBoundingBoxes();
 
