@@ -25,6 +25,7 @@
 #include "box.h"
 #include "Intersect.h"
 #include "Scene.h"
+#include <cmath>
 
 class Flyscene {
 
@@ -99,7 +100,7 @@ public:
 
   Eigen::Vector3f Shader(int bounce, Tucano::Face face, HitInfo hit, Ray ray, bool insideObject);
 
-  bool canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
+  pair<bool, Tucano::Material::Mtl> canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position);
 
   void updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eigen::Vector3f& origin, Eigen::Vector2i& image_size, int number_threads, int thread_id);
 
@@ -109,16 +110,18 @@ public:
 
   void initBoundingBoxes();
 
-  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce);
+  void ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int bounce, int jumps);
 
   void renderBoundingBoxes();
-
+  
   Eigen::Vector4f trace_global_illum(Ray& ray);
 
-
+  std::pair<HitInfo,Tucano::Face> getIntersections(Ray ray);
 private:
   // A simple phong shader for rendering meshes
   Tucano::Effects::PhongMaterial phong;
+
+  int jumps;
 
   // A fly through camera
   Tucano::Flycamera flycamera;
@@ -185,6 +188,13 @@ private:
 
   std::vector<Tucano::Shapes::Sphere> previewSpheres;
 
+  bool renderBox;
+
+  bool renderAllBox;
+
+  vector<Tucano::Shapes::Cylinder> light_rays;
+
+  bool renderRayLights;
 public:
   // Root box
   Box root_box;
