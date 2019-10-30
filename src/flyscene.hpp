@@ -171,12 +171,14 @@ private:
 
   Tucano::Shapes::Sphere sphere1;
 
+#define HEIGHT_CORRECTION 0.25f
+
   std::vector<Eigen::Vector4f> spherePositions{
-		Eigen::Vector4f(-0.5f, 0.25f, 0.25f, 0.75f) * SCALE,
-		Eigen::Vector4f(0.75f, 0.25f, -0.1f, 0.75f) * SCALE,
-		Eigen::Vector4f(0.0f, 0.33f, -0.5f, 1.0f) * SCALE,
-		Eigen::Vector4f(-0.75f, 0.33f, -0.2f, 1.0f) * SCALE,
-		Eigen::Vector4f(0.6f, 0.167f, 0.4f, 0.5f) * SCALE
+		Eigen::Vector4f(-0.5f, 0.25f - HEIGHT_CORRECTION, 0.8f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.75f, 0.25f - HEIGHT_CORRECTION, 0.7f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.6f, 0.33f - HEIGHT_CORRECTION, -0.4f, 1.0f) * SCALE,
+		Eigen::Vector4f(-0.75f, 0.33f - HEIGHT_CORRECTION, -0.2f, 1.0f) * SCALE,
+		Eigen::Vector4f(0.0f, 0.167f - HEIGHT_CORRECTION, 1.2f, 0.5f) * SCALE
   };
   std::vector<Eigen::Vector3f> sphereColors{
 	  Eigen::Vector3f(0.8f, 0.2401f, 0.0f), // red sphere

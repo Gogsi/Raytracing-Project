@@ -18,9 +18,9 @@ void Flyscene::initialize(int width, int height) {
 	flycamera.setPerspectiveMatrix(60.0, width / (float)height, 0.1f, 100.0f);
 	flycamera.setViewport(Eigen::Vector2f((float)width, (float)height));
 
-  // load the OBJ file and materials
-  Tucano::MeshImporter::loadObjFile(mesh, materials,
-                                    "resources/models/twoObjects.obj");
+	// load the OBJ file and materials
+	Tucano::MeshImporter::loadObjFile(mesh, materials,
+		"resources/models/planeobj.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
 	mesh.normalizeModelMatrix();
@@ -44,8 +44,8 @@ void Flyscene::initialize(int width, int height) {
 	lightrep.setSize(0.15);
 
 	// create a first ray-tracing light source at some random position
-	lights.push_back(Eigen::Vector3f(-1.0, 1.0, 1.0));
-	//sphericalLights.push_back(make_pair(Eigen::Vector3f(-1.0, 1.0, 1.0), 0.1));
+	//lights.push_back(Eigen::Vector3f(-1.0, 1.0, 1.0));
+	sphericalLights.push_back(make_pair(Eigen::Vector3f(-1.0, 1.0, 1.0), 0.1));
 
 	// scale the camera representation (frustum) for the ray debug
 	camerarep.shapeMatrix()->scale(0.2);
@@ -78,9 +78,9 @@ void Flyscene::initialize(int width, int height) {
 	int facePerCube = sqrt(mesh.getNumberOfFaces() + 100);
 
 	// KD Trees :
-    divideBox_KD(facePerCube);
-	 #define KD
- 
+	divideBox_KD(facePerCube);
+#define KD
+
 
 	// Flat structure:
 	// change if needed
@@ -90,32 +90,32 @@ void Flyscene::initialize(int width, int height) {
 
 	// if u want to visualize the bounding boxes 
 	//#define show_bounding
-	#define show_KD
+#define show_KD
 
 	initBoundingBoxes();
 
-  {
-	  for (size_t i = 0; i < spherePositions.size(); i++)
-	  {
-		  Affine3f matrix = Affine3f::Identity();
+	{
+		for (size_t i = 0; i < spherePositions.size(); i++)
+		{
+			Affine3f matrix = Affine3f::Identity();
 
-		  sphere1 = Tucano::Shapes::Sphere(spherePositions[i].w() / 3);
+			sphere1 = Tucano::Shapes::Sphere(spherePositions[i].w() / 3);
 
-		  mesh.resetModelMatrix();
-		  mesh.setModelMatrix(matrix);
+			mesh.resetModelMatrix();
+			mesh.setModelMatrix(matrix);
 
-		  Eigen::Vector3f translation_vector = spherePositions[i].head<3>();
+			Eigen::Vector3f translation_vector = spherePositions[i].head<3>();
 
 
-		  matrix.translate(translation_vector);
-		  sphere1.setModelMatrix(matrix);
-		  //sphere1.setColor(sphereColors[i]);
-		  Eigen::Vector4f color = Eigen::Vector4f(sphereColors[i].x(), sphereColors[i].y(), sphereColors[i].z(), 0);
-		  sphere1.setColor(color);
+			matrix.translate(translation_vector);
+			sphere1.setModelMatrix(matrix);
+			//sphere1.setColor(sphereColors[i]);
+			Eigen::Vector4f color = Eigen::Vector4f(sphereColors[i].x(), sphereColors[i].y(), sphereColors[i].z(), 0);
+			sphere1.setColor(color);
 
-		  previewSpheres.push_back(sphere1);
-	  }
-  }
+			previewSpheres.push_back(sphere1);
+		}
+	}
 }
 
 void Flyscene::paintGL(void) {
@@ -130,8 +130,8 @@ void Flyscene::paintGL(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	scene_light.resetViewMatrix();
-	scene_light.viewMatrix()->translate(-lights.back());
-	//scene_light.viewMatrix()->translate(-sphericalLights.back().first);
+	//scene_light.viewMatrix()->translate(-lights.back());
+	scene_light.viewMatrix()->translate(-sphericalLights.back().first);
 
   // render the scene using OpenGL and one light source
 	phong.render(mesh, flycamera, scene_light);
@@ -391,7 +391,6 @@ void Flyscene::ReflectDebugRay(Eigen::Vector3f origin, Eigen::Vector3f dir, int 
 	}
 }
 
-
 void Flyscene::raytraceScene(int width, int height) {
 	std::cout << "ray tracing ..." << std::endl;
 	std::clock_t c_start = std::clock();
@@ -449,13 +448,13 @@ void Flyscene::updating_pixels(vector<vector<Eigen::Vector3f>>& pixel_data, Eige
 		abort();
 	}
 
-	/*for (size_t i = 0; i < spherePositions.size(); i++)
+	for (size_t i = 0; i < spherePositions.size(); i++)
 	{
 		auto tempMat = currentScene.addSphere(spherePositions[i].head<3>(), spherePositions[i].w(), sphereColors[i]);
 		int mat_id = materials.size();
 		materials.push_back(tempMat);
 		currentScene.getSphere(i).setMaterialID(mat_id);
-	}*/
+	}
 
 	for (int j = thread_id; j < image_size[1]; j += number_threads) {
 		for (int i = 0; i < image_size[0]; i++) {
@@ -482,7 +481,6 @@ void Flyscene::renderBoundingBoxes() {
 	}
 #endif
 }
-
 
 void Flyscene::initBoundingBoxes() {
 
@@ -594,7 +592,9 @@ Eigen::Vector3f Flyscene::traceRay(int bounce, Ray ray, bool insideObject) {
 		return Shader(bounce, face, hit, ray, insideObject);
 	}
 
-	if (bounce == 0) return Eigen::Vector3f(1.0, 1.0, 1.0);
+	if (bounce == 0) {
+		return Eigen::Vector3f(0.69019607843, 1,1);
+	}
 
 	return Eigen::Vector3f(0.0, 0.0, 0.0);
 }
@@ -615,7 +615,7 @@ Eigen::Vector3f Flyscene::Shader(int bounce, Tucano::Face face, HitInfo hit, Ray
 	for (auto spherical : sphericalLights)
 	{
 		Eigen::Vector3f normal = hit.point - spherical.first;
-		vector<Eigen::Vector3f> points = Shader::getNPointsOnCircle(spherical.first, spherical.second, normal.normalized(), 5);
+		vector<Eigen::Vector3f> points = Shader::getNPointsOnCircle(spherical.first, spherical.second, normal.normalized(), 4);
 		points.push_back(spherical.first);
 
 		for (auto lightPosition : points)
@@ -671,7 +671,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 {
 	// LIGHT
 	int numLights = lights.size() + sphericalLights.size();
-	Eigen::Vector3f lightIntensity = Eigen::Vector3f(1.0, 1.0, 1.0) / numLights;
+	Eigen::Vector3f lightIntensity = Eigen::Vector3f(0.8, 0.8, 0.8) / numLights;
 	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
 	Eigen::Vector3f reflectedLight = Shader::reflect(-lightDirection, normalN);
 
@@ -742,7 +742,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 		return (mat.getAmbient().cwiseProduct(lightIntensity) + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor) + color * result.second.getDissolveFactor();
 	}
 
-	return (color + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
+	return (color + globalIllum + (1 - mat.getDissolveFactor()) * reflectedColor + mat.getDissolveFactor() * refractedColor); // Not sure what the reflection factor is. So any bugs could be caused by this
 }
 
 pair<bool, Tucano::Material::Mtl> Flyscene::canSeeLight(Eigen::Vector3f lightPos, Eigen::Vector3f position)
