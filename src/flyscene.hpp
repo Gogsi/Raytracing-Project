@@ -171,19 +171,38 @@ private:
 
   Tucano::Shapes::Sphere sphere1;
 
+  //when models are normalized
+#define HEIGHT_CORRECTION 0.0f
+
   std::vector<Eigen::Vector4f> spherePositions{
-		Eigen::Vector4f(-0.5f, 0.25f, 0.25f, 0.75f) * SCALE,
-		Eigen::Vector4f(0.75f, 0.25f, -0.1f, 0.75f) * SCALE,
-		Eigen::Vector4f(0.0f, 0.33f, -0.5f, 1.0f) * SCALE,
-		Eigen::Vector4f(-0.75f, 0.33f, -0.2f, 1.0f) * SCALE,
-		Eigen::Vector4f(0.6f, 0.167f, 0.4f, 0.5f) * SCALE
+		Eigen::Vector4f(-0.5f, 0.25f - HEIGHT_CORRECTION, 0.8f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.75f, 0.25f - HEIGHT_CORRECTION, 0.7f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.6f, 0.25f - HEIGHT_CORRECTION, -0.4f, 0.75f) * SCALE,
+		Eigen::Vector4f(-0.45f, 0.25f - HEIGHT_CORRECTION, -0.4f, 0.75f) * SCALE,
+		Eigen::Vector4f(0.0f, 0.167f - HEIGHT_CORRECTION, 1.2f, 0.5f) * SCALE,
+		Eigen::Vector4f(1.0f, 0.167f - HEIGHT_CORRECTION, 1.2f, 0.5f)* SCALE,
+		Eigen::Vector4f(-1.0f, 0.25f - HEIGHT_CORRECTION, 1.2f, 0.75f)* SCALE,
+		Eigen::Vector4f(0.0f, 0.33f - HEIGHT_CORRECTION, -2.2f, 1.0f)* SCALE,
+		Eigen::Vector4f(0.0f, 0.33f - HEIGHT_CORRECTION, 2.2f, 1.0f)* SCALE,
+		Eigen::Vector4f(-3.0f, 0.167f - HEIGHT_CORRECTION, -2.2f, 0.5f)* SCALE,
+		Eigen::Vector4f(3.0f, 0.25f - HEIGHT_CORRECTION, -2.2f, 0.75f)* SCALE,
+		Eigen::Vector4f(3.5f, 0.33f - HEIGHT_CORRECTION, 0.0f, 1.0f)* SCALE,
+		Eigen::Vector4f(-3.5f, 0.167f - HEIGHT_CORRECTION, 0.0f, 0.5f)* SCALE
   };
   std::vector<Eigen::Vector3f> sphereColors{
 	  Eigen::Vector3f(0.8f, 0.2401f, 0.0f), // red sphere
 	  Eigen::Vector3f(0.5f, 0.5f, 0), // green sphere
 	  Eigen::Vector3f(0.98824, 0.72941, 0.01176), // orange sphere
 	  Eigen::Vector3f(0.0f, 0.5f, 0.5f), // blue sphere
-	  Eigen::Vector3f(1.0f, 0.0f, 1.0f) // pink sphere
+	  Eigen::Vector3f(1.0f, 0.0f, 1.0f), // pink sphere
+	  Eigen::Vector3f(1.0f, 0.75f, 1.0f),
+	  Eigen::Vector3f(0.5f, 1.0f, 0.75f), // pink sphere
+	  Eigen::Vector3f(0.4f, 0.3f, 1.0f), // pink sphere
+	  Eigen::Vector3f(0.8f, 0.667f, 0.0f), // pink sphere
+	  Eigen::Vector3f(1.0f, 0.75f, 1.0f),
+	  Eigen::Vector3f(0.0f, 0.7f, 1.0f),
+	  Eigen::Vector3f(1.0f, 0.5f, 0.3f),
+	  Eigen::Vector3f(0.0f, 0.3f, 0.123f),
   };
 
   std::vector<Tucano::Shapes::Sphere> previewSpheres;

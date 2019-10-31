@@ -37,9 +37,9 @@ public:
 		spheres.push_back( new Intersect::Sphere(center, radius / RADIUS_CORRECTION));
 
 		Tucano::Material::Mtl sphereMat = Tucano::Material::Mtl();
-		sphereMat.setAmbient(Eigen::Vector3f(0, 0, 0));
+		sphereMat.setAmbient(Eigen::Vector3f(color) / 3);
 		sphereMat.setDiffuse(color);
-		sphereMat.setSpecular(Eigen::Vector3f(0.8f, 0.8f, 0.8f));
+		sphereMat.setSpecular(Eigen::Vector3f(0.5f, 0.5f, 0.5f));
 		sphereMat.setIlluminationModel(2);
 		sphereMat.setShininess(10);
 		sphereMat.setDissolveFactor(0);
