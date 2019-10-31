@@ -23,7 +23,8 @@ void Flyscene::initialize(int width, int height) {
 		"resources/models/planeobj.obj");
 
 	// normalize the model (scale to unit cube and center at origin)
-	mesh.normalizeModelMatrix();
+	//mesh.normalizeModelMatrix();
+	
 
 	// pass all the materials to the Phong Shader
 	for (int i = 0; i < materials.size(); ++i)
@@ -671,7 +672,7 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 {
 	// LIGHT
 	int numLights = lights.size() + sphericalLights.size();
-	Eigen::Vector3f lightIntensity = Eigen::Vector3f(0.8, 0.75, 0.6) / numLights;
+	Eigen::Vector3f lightIntensity = Eigen::Vector3f(0.8, 0.8, 0.8) / numLights;
 	Eigen::Vector3f lightDirection = (lightPosition - hit.point).normalized();
 	Eigen::Vector3f reflectedLight = Shader::reflect(-lightDirection, normalN);
 
@@ -681,7 +682,6 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 
 	Eigen::Vector3f reflectedColor = Eigen::Vector3f(0, 0, 0);
 	Eigen::Vector3f refractedColor = Eigen::Vector3f(0, 0, 0);
-	Eigen::Vector3f globalIllum = Eigen::Vector3f(0, 0, 0);
 
 	if (bounce < MAX_BOUNCES) {
 		// calc reflectedRay
@@ -702,24 +702,23 @@ Eigen::Vector3f Flyscene::calculateColor(int bounce, Eigen::Vector3f lightPositi
 	}
 
 #define GLOBAL_RESOLUTION 8
-
+	Eigen::Vector3f globalIllum = Eigen::Vector3f(0, 0, 0);
 	std::vector<Ray> illum_rays = ray.resendRay(hit.normal, hit.point, GLOBAL_RESOLUTION);
 	std::vector<Eigen::Vector4f> global_colors;
 
 	for (size_t i = 0; i < illum_rays.size(); i++)
 	{
-		global_colors.push_back(trace_global_illum( illum_rays[i]));
+		global_colors.push_back(trace_global_illum(illum_rays[i]));
 	}
 
 	for (size_t i = 0; i < global_colors.size(); i++)
 	{
 		if (global_colors[i].w() != 0.0) {
 			float distance = global_colors[i].w();
-			globalIllum += global_colors[i].head<3>() * std::min(1 / pow(50 * distance,2), 1.0f);
+			globalIllum += global_colors[i].head<3>() * std::min(1 / pow(50 * distance, 2), 1.0f);
 		}
 	}
 	globalIllum /= GLOBAL_RESOLUTION;
-
 
 	pair<bool, Tucano::Material::Mtl> result = canSeeLight(lightPosition, hit.point);
 
